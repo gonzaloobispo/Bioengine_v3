@@ -1,0 +1,30 @@
+# Dependencias
+node_modules/
+dist/
+build/
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+venv/
+.venv/
+
+# Logs y Temporales
+*.log
+manual_test.log
+backend_out.log
+backend_err.log
+frontend_out.log
+frontend_err.log
+startup_debug.log
+
+# Bases de datos (Opcional, pero recomendado ignorar el .db y usar un dump o script)
+# bioengine_v3.db
+# bioengine.db
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
