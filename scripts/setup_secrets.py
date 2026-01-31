@@ -2,7 +2,7 @@ import sqlite3
 import os
 import json
 
-DB_PATH = r"c:\BioEngine_V3\bioengine_v3.db"
+DB_PATH = r"c:\BioEngine_V3\db\bioengine_v3.db"
 
 def setup_sync_tables():
     conn = sqlite3.connect(DB_PATH)

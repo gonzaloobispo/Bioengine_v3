@@ -1,5 +1,10 @@
 # 🏃‍♂️ BioEngine V3 - Sistema de Entrenamiento Inteligente
 
+Contexto rápido para asistentes al abrir una nueva terminal:
+- Lee primero `docs/README.md` (índice maestro + plan a seguir).
+- Luego este `README.md` (estructura y arranque del sistema).
+- Si necesitas estado/decisiones técnicas: `docs/MEJORAS_COMPLETADAS.md`, `docs/NAVEGACION_COMPLETADA.md`, `docs/MULTI_CEREBRO_RESUMEN.md`, `docs/CEREBRO_VIVO_IMPLEMENTACION.md`.
+
 **Sistema de análisis biométrico y coaching deportivo personalizado**
 
 ---
@@ -97,6 +102,8 @@ BioEngine_V3/
 
 Toda la documentación técnica está en la carpeta **`docs/`**:
 
+- **[README.md](docs/README.md)** - Índice maestro (plan y accesos rápidos)
+
 ### 🧠 Sistema "Cerebro Vivo" (AI Coach)
 - **[CEREBRO_VIVO_LISTO.md](docs/CEREBRO_VIVO_LISTO.md)** - Guía de uso del AI Coach
 - **[CEREBRO_VIVO_IMPLEMENTACION.md](docs/CEREBRO_VIVO_IMPLEMENTACION.md)** - Documentación técnica
@@ -117,7 +124,6 @@ Toda la documentación técnica está en la carpeta **`docs/`**:
 ### 🔧 Guías y Procedimientos
 - **[LIMPIEZA_COMPLETADA.md](docs/LIMPIEZA_COMPLETADA.md)** - Limpieza del contexto base
 - **[COMO_PROBAR.md](docs/COMO_PROBAR.md)** - Cómo probar el sistema
-- **[RESUMEN_IMPLEMENTACION.md](docs/RESUMEN_IMPLEMENTACION.md)** - Resumen general
 
 ### 🐛 Solución de Problemas
 - **[PROBLEMA_RESUELTO.md](docs/PROBLEMA_RESUELTO.md)** - Problemas resueltos

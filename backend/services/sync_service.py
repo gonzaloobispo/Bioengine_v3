@@ -5,7 +5,7 @@ import datetime
 from garminconnect import Garmin
 import os
 
-DB_PATH = r"c:\BioEngine_V3\bioengine_v3.db"
+DB_PATH = r"c:\BioEngine_V3\db\bioengine_v3.db"
 
 class SyncService:
     def __init__(self):

@@ -7,7 +7,7 @@ from datetime import datetime
 # Configuración de rutas
 V2_PATH = r"c:\BioEngine_Gonzalo"
 V3_PATH = r"c:\BioEngine_V3"
-DB_PATH = os.path.join(V3_PATH, "bioengine_v3.db")
+DB_PATH = os.path.join(V3_PATH, "db\bioengine_v3.db")
 
 def create_schema(conn):
     cursor = conn.cursor()

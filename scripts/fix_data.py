@@ -1,6 +1,6 @@
 import sqlite3
 
-DB_PATH = r"c:\BioEngine_V3\bioengine_v3.db"
+DB_PATH = r"c:\BioEngine_V3\db\bioengine_v3.db"
 
 def fix_decimal_data():
     conn = sqlite3.connect(DB_PATH)

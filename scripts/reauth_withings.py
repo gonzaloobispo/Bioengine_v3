@@ -3,7 +3,7 @@ import sqlite3
 import json
 import webbrowser
 
-DB_PATH = r"c:\BioEngine_V3\bioengine_v3.db"
+DB_PATH = r"c:\BioEngine_V3\db\bioengine_v3.db"
 
 def get_secret(service):
     conn = sqlite3.connect(DB_PATH)

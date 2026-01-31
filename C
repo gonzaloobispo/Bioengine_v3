@@ -1,0 +1,39 @@
+@echo off
+title BioEngine Frontend Debug
+setlocal
+
+set ROOT=%~dp0
+set LOG_FILE=%ROOT%frontend_debug.log
+echo [%date% %time%] Iniciando debug frontend > "%LOG_FILE%"
+
+echo ======================================================
+echo   BIOENGINE V3 - FRONTEND DEBUG
+echo ======================================================
+echo.
+
+echo [+] Verificando npm...
+where npm
+where npm >> "%LOG_FILE%" 2>&1
+
+echo.
+echo [+] Entrando a frontend...
+cd /d "%ROOT%frontend"
+echo [%date% %time%] CWD: %cd% >> "%LOG_FILE%"
+
+echo.
+echo [+] Instalando dependencias si falta node_modules...
+if not exist node_modules (
+  echo Instalando dependencias...
+  npm install >> "%LOG_FILE%" 2>&1
+)
+
+echo.
+echo [+] Ejecutando Vite en 5173...
+echo npm run dev -- --host --port 5173 --strictPort
+npm run dev -- --host --port 5173 --strictPort >> "%LOG_FILE%" 2>&1
+
+echo.
+echo [!] El proceso terminó. Revisa frontend_debug.log.
+echo Presiona cualquier tecla para cerrar.
+pause > nul
+exit

@@ -7,9 +7,12 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)
 if project_root not in sys.path:
     sys.path.append(project_root)
+backend_path = os.path.join(project_root, "backend")
+if backend_path not in sys.path:
+    sys.path.append(backend_path)
 
 try:
-    from backend.services.ai_service import AIService
+    from services.ai_service import AIService
 except ModuleNotFoundError as e:
     print(f"Error imports: {e}")
     print(f"PYTHONPATH: {sys.path}")

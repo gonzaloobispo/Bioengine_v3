@@ -1,0 +1,69 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2026-01-19T03:50:38.855252",
+    "context_window_summary": "Usuario 49 años post-bariátrico, tendinosis rotuliana activa, Fase 1 rehabilitación"
+  },
+  "perfil_usuario": {
+    "nombre": "Gonzalo Obispo",
+    "edad": 49,
+    "sexo": "Masculino",
+    "altura_cm": 176,
+    "peso_objetivo_kg": 74,
+    "experiencia_deportiva": {
+      "nivel_actual": "Intermedio-Avanzado",
+      "deportes_principales": [
+        "Tenis",
+        "Trail Running",
+        "Ciclismo"
+      ],
+      "anos_experiencia": {
+        "tenis": 5,
+        "trail": 3,
+        "ciclismo": 2
+      }
+    }
+  },
+  "historial_medico_resumido": {
+    "lesiones_activas": [
+      {
+        "nombre": "Tendinosis Cuadricipital Derecha",
+        "gravedad": "Moderada",
+        "restricciones": [
+          "Evitar impacto alto",
+          "Priorizar ciclismo"
+        ],
+        "nivel_dolor_actual": 0,
+        "tendencia": "Estable"
+      }
+    ],
+    "archivo_completo": "config/historial_medico.json"
+  },
+  "estadisticas_ultimos_30d": {
+    "km_totales": 22.83,
+    "actividades_completadas": 3,
+    "peso_promedio_kg": 79.9,
+    "adherencia_plan": 0,
+    "dolor_rodilla_dias": 0,
+    "ultimo_calculo": "2026-01-19 03:50"
+  },
+  "insights_aprendidos": [
+    {
+      "patron": "Ciclismo 45min → Dolor 0/10 (92% correlación)",
+      "accion": "Priorizar ciclismo en semanas con dolor",
+      "confianza": 92
+    },
+    {
+      "patron": "Short Foot Exercise AM → No dolor (95%)",
+      "accion": "Recordatorio diario pre-café",
+      "confianza": 95
+    }
+  ],
+  "conversaciones_relevantes": [
+    {
+      "fecha": "2026-01-19",
+      "aprendizaje": "Usuario prefiere actividad sobre descanso total",
+      "contexto": "Solicitó tracking dolor rodilla"
+    }
+  ]
+}

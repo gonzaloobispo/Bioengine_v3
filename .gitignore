@@ -12,13 +12,9 @@ venv/
 .venv/
 
 # Logs y Temporales
+logs/
 *.log
-manual_test.log
-backend_out.log
-backend_err.log
-frontend_out.log
-frontend_err.log
-startup_debug.log
+%LOG_FILE%
 
 # Bases de datos (Opcional, pero recomendado ignorar el .db y usar un dump o script)
 # bioengine_v3.db

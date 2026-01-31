@@ -1,5 +1,5 @@
 import sqlite3
-DB_PATH = r"c:\BioEngine_V3\bioengine_v3.db"
+DB_PATH = r"c:\BioEngine_V3\db\bioengine_v3.db"
 conn = sqlite3.connect(DB_PATH)
 c = conn.cursor()
 act_count = c.execute("SELECT count(*) FROM activities").fetchone()[0]

@@ -6,6 +6,9 @@ import time
 import re
 import asyncio
 import logging
+from services.context_manager import ContextManager
+from services.multi_model_client import MultiModelClient
+from services.cost_control import CostControl
 
 # Setup detailed logging for debugging
 logging.basicConfig(
@@ -15,16 +18,23 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-DB_PATH = r"c:\BioEngine_V3\bioengine_v3.db"
+DB_PATH = r"c:\BioEngine_V3\db\bioengine_v3.db"
 
 class AIService:
     def __init__(self):
         self.db_path = DB_PATH
-        # Using gemini-2.5-flash (latest stable model, confirmed available)
-        self.model_name = "gemini-2.5-flash"
+        # Using gemini-1.5-flash-latest (stable for v1beta API)
+        self.model_name = "gemini-1.5-flash-latest"
         self._setup_gemini()
+        self.context_manager = ContextManager()
         self._analysis_cache = {"timestamp": 0, "content": None}
         self._lock = None
+        self._message_count = 0
+        self._semantic_refresh_every = 10
+        
+        # Initialize Multi-Model Client for fallback
+        self.multi_model_client = None
+        self._setup_multi_model_client()
 
     def _get_connection(self):
         conn = sqlite3.connect(self.db_path)
@@ -63,6 +73,34 @@ class AIService:
         if not self.api_key:
             print("Warning: No Gemini API key found")
         # Using REST API directly, no SDK client needed
+    
+    def _get_all_api_keys(self):
+        """Retrieve all API keys for multi-model client."""
+        conn = self._get_connection()
+        keys = {}
+        try:
+            rows = conn.execute("SELECT provider, api_key FROM api_keys WHERE enabled = 1 ORDER BY priority ASC").fetchall()
+            for row in rows:
+                keys[row['provider']] = row['api_key']
+        except sqlite3.OperationalError as e:
+            logger.warning(f"Could not load API keys for multi-model: {e}")
+        finally:
+            conn.close()
+        return keys
+    
+    def _setup_multi_model_client(self):
+        """Initialize the multi-model client with fallback capability."""
+        try:
+            api_keys = self._get_all_api_keys()
+            if api_keys:
+                cost_control = CostControl()
+                self.multi_model_client = MultiModelClient(api_keys, cost_control)
+                logger.info(f"Multi-model client initialized with {len(api_keys)} providers")
+            else:
+                logger.warning("No API keys found, multi-model client not initialized")
+        except Exception as e:
+            logger.error(f"Failed to initialize multi-model client: {e}")
+            self.multi_model_client = None
 
     def _get_user_context(self):
         conn = self._get_connection()
@@ -89,7 +127,8 @@ class AIService:
         import requests
         
         logger.info(f"Starting API call with model: {self.model_name}")
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model_name}:generateContent?key={self.api_key[:10]}..."
+        key_preview = self.api_key[:10] if self.api_key else "no-key"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model_name}:generateContent?key={key_preview}..."
         logger.debug(f"URL: {url}")
         
         headers = {
@@ -154,27 +193,187 @@ class AIService:
         logger.error("Failed after max retries")
         raise Exception("Failed after max retries due to rate limiting.")
 
-    async def get_response(self, user_message, chat_history=[]):
-        if not self.api_key:
-            self._setup_gemini()
-            if not self.api_key:
-                return "Error: API Key de Gemini no encontrada o inválida. Verifica la tabla 'secrets'."
+    def _format_chat_history(self, chat_history, limit=12):
+        if not chat_history:
+            return ""
 
+        lines = []
+        for msg in chat_history[-limit:]:
+            if not isinstance(msg, dict):
+                continue
+            role = (msg.get("role") or msg.get("sender") or msg.get("type") or "").lower()
+            text = msg.get("text") or msg.get("content") or msg.get("message")
+            if not text:
+                continue
+            role_label = "Usuario" if role in {"user", "usuario", "human"} else "Coach"
+            lines.append(f"{role_label}: {text}")
+
+        if not lines:
+            return ""
+
+        return "=== HISTORIAL DE CHAT ===\n" + "\n".join(lines)
+
+    async def get_response(self, user_message, chat_history=None):
+        if chat_history is None:
+            chat_history = []
         system_instruction = (
-            "Eres BioEngine Coach, un asistente experto en triatlón, running y salud biomecánica. "
-            "Tienes acceso a los datos reales del usuario (Gonzalo). "
-            "Tus respuestas deben ser precisas, motivadoras pero realistas, y basadas en los datos proporcionados. "
-            "Si el usuario pregunta por su progreso, analiza las últimas actividades y peso. "
+            "Eres BioEngine Coach, un asistente experto en triatlón, running y salud biomecánica.\n"
+            f"FECHA ACTUAL: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}\n\n"
+            "=== MEMORIA Y CONTEXTO BASE ===\n"
+            f"{self.context_manager.get_foundational_context()}\n\n"
+            "Tus respuestas deben ser precisas, motivadoras pero realistas, y basadas tanto en los datos históricos "
+            "como en el conocimiento base arriba mencionado.\n"
+            "IMPORTANTE: Ten en cuenta la línea de tiempo. Si hay lesiones mencionadas en el contexto, "
+            "respeta las restricciones indicadas hasta que se registren cambios.\n\n"
+            "=== AUTO-ACTUALIZACIÓN DE MEMORIA ===\n"
+            "Si el usuario informa dolor físico, debes incluir al FINAL de tu respuesta (en una línea nueva) "
+            "el siguiente comando exactamente: [COMMAND: LOG_PAIN: nivel] (donde nivel es del 1 al 10).\n"
+            "Si el usuario confirma que ha completado un ejercicio del plan, incluye: [COMMAND: UPDATE_CONTEXT: se completó X ejercicio].\n"
             "Habla en español de forma natural y profesional."
         )
 
         full_context = self._get_user_context()
-        query = f"{system_instruction}\n\n{full_context}\n\nUsuario: {user_message}"
-        
-        try:
-            return await self._generate_content_with_retry(query)
-        except Exception as e:
-            return f"Error generando respuesta: {str(e)}"
+        history_block = self._format_chat_history(chat_history)
+        prompt_parts = [full_context]
+        if history_block:
+            prompt_parts.append(history_block)
+        prompt_parts.append(f"Usuario: {user_message}")
+        prompt = "\n\n".join(prompt_parts)
+
+        response = None
+
+        if self.multi_model_client is None:
+            self._setup_multi_model_client()
+
+        if self.multi_model_client:
+            try:
+                logger.info("Attempting chat with multi-model client...")
+                response = self.multi_model_client.generate(
+                    prompt=prompt,
+                    system_instruction=system_instruction,
+                    max_tokens=1200
+                )
+            except Exception as fallback_error:
+                logger.error(f"Chat multi-model failed: {fallback_error}")
+
+        if response is None:
+            if not self.api_key:
+                self._setup_gemini()
+
+            if self.api_key:
+                query = f"{system_instruction}\n\n{prompt}"
+                try:
+                    response = await self._generate_content_with_retry(query)
+                except Exception as e:
+                    logger.error(f"Chat Error with Gemini: {e}")
+
+        if response is None:
+            if self.multi_model_client is None and not self.api_key:
+                return "Error: API keys no encontradas para generar respuesta."
+            return "Error generando respuesta: todos los modelos alcanzaron sus límites o no están configurados."
+
+        processed_response = response
+        if "[COMMAND:" in response:
+            pain_match = re.search(r"\[COMMAND: LOG_PAIN: (\d+)\]", response)
+            if pain_match:
+                level = int(pain_match.group(1))
+                self.context_manager.log_pain(level, f"Registrado vía chat: {user_message[:100]}")
+                logger.info(f"Pain logged from AI response: {level}")
+
+            update_match = re.search(r"\[COMMAND: UPDATE_CONTEXT: (.+?)\]", response)
+            if update_match:
+                update_text = update_match.group(1).strip()
+                self.context_manager.log_context_update(update_text, source="chat")
+                logger.info("Context update logged from AI response")
+                try:
+                    asyncio.create_task(self._update_semantic_summary())
+                except RuntimeError:
+                    await self._update_semantic_summary()
+
+            processed_response = re.sub(r"\[COMMAND:.*?\]", "", response).strip()
+
+        self._message_count += 1
+        if self._message_count % self._semantic_refresh_every == 0:
+            try:
+                asyncio.create_task(self._update_semantic_summary(force=True))
+            except RuntimeError:
+                await self._update_semantic_summary(force=True)
+
+        return processed_response
+
+    async def _update_semantic_summary(self, force=False):
+        data = self.context_manager.get_semantic_summary_data()
+        entries = data.get("entries", [])
+        total_count = len(entries)
+        if total_count == 0:
+            return
+
+        last_count = data.get("last_count", 0)
+        if last_count < 0:
+            last_count = 0
+        if last_count > total_count:
+            last_count = total_count
+
+        if force:
+            last_count = 0
+
+        new_entries = entries[last_count:]
+        if not new_entries:
+            return
+
+        prev_summary = data.get("summary", "").strip()
+        new_lines = []
+        for entry in new_entries:
+            fecha = entry.get("fecha", "N/A")
+            aprendizaje = entry.get("aprendizaje", "N/A")
+            contexto_item = entry.get("contexto", "")
+            if contexto_item:
+                new_lines.append(f"- {fecha}: {aprendizaje} ({contexto_item})")
+            else:
+                new_lines.append(f"- {fecha}: {aprendizaje}")
+
+        system_instruction = (
+            "Eres un sistema de memoria de BioEngine. Resume en español la memoria evolutiva del usuario. "
+            "Debes producir un resumen compacto pero rico: perfil, lesiones activas, restricciones, objetivos, "
+            "preferencias, hábitos clave y cualquier patrón importante. Mantén el tono clínico-profesional. "
+            "Salida: 6-10 líneas concisas, sin listas numeradas ni emojis."
+        )
+
+        prompt = "RESUMEN ACTUAL (si existe):\n"
+        prompt += prev_summary or "(vacío)"
+        prompt += "\n\nNUEVAS ENTRADAS A INCORPORAR:\n"
+        prompt += "\n".join(new_lines)
+        prompt += "\n\nGenera el resumen actualizado ahora."
+
+        summary_text = None
+
+        if self.multi_model_client is None:
+            self._setup_multi_model_client()
+
+        if self.multi_model_client:
+            try:
+                summary_text = self.multi_model_client.generate(
+                    prompt=prompt,
+                    system_instruction=system_instruction,
+                    max_tokens=600
+                )
+            except Exception as e:
+                logger.error(f"Semantic summary via multi-model failed: {e}")
+
+        if summary_text is None:
+            if not self.api_key:
+                self._setup_gemini()
+
+            if self.api_key:
+                query = f"{system_instruction}\n\n{prompt}"
+                try:
+                    summary_text = await self._generate_content_with_retry(query)
+                except Exception as e:
+                    logger.error(f"Semantic summary via Gemini failed: {e}")
+
+        if summary_text:
+            cleaned = summary_text.strip()
+            self.context_manager.set_semantic_summary(cleaned, total_count)
 
     async def get_coach_analysis(self):
         # Initialize lock lazily to ensure it attaches to the current event loop
@@ -240,97 +439,52 @@ class AIService:
             finally:
                 conn.close()
             
+            # Obtener contexto base para el análisis
+            base_context = self.context_manager.get_foundational_context()
+            
             # ENHANCED SYSTEM INSTRUCTION - Prompt mejorado y más específico
-            system_instruction = """Eres BioEngine Coach, un entrenador de alto rendimiento especializado en:
-- Tenis Master (categoría 45-50 años)
-- Biomecánica deportiva y prevención de lesiones
-- Running y entrenamiento cardiovascular
-- Análisis de datos biométricos y rendimiento
+            system_instruction = f"""Eres BioEngine Coach, un entrenador de alto rendimiento.
+FECHA ACTUAL: {datetime.datetime.now().strftime('%Y-%m-%d')}
+
+=== CONOCIMIENTO BASE Y MEMORIA DEL ATLETA ===
+{base_context}
 
 PERFIL DEL ATLETA:
 Nombre: Gonzalo
 Edad: 49 años
-Deporte principal: Tenis Master (competitivo)
-Actividades complementarias: Running, Caminata, Entrenamiento funcional
-Objetivo principal: Mantener rendimiento en tenis mientras optimiza composición corporal
-Consideraciones: Prevención de lesiones típicas de edad (rodilla, hombro, codo de tenista)
+Objetivo principal: Mantener rendimiento en tenis mientras optimiza composición corporal.
+Consideraciones: El ciclismo es clave para movilidad de rodilla. Sigue el plan de 'Tenis Master 49+'.
 
 TU TAREA:
-Analizar los datos biométricos y de actividad para generar un análisis EJECUTIVO, ESPECÍFICO y ACCIONABLE.
+Analizar los datos biométricos y de actividad para generar un análisis EJECUTIVO, ESPECÍFICO y ACCIONABLE, basado en la evolución temporal y el estado actual de sus lesiones/plan.
 
 FORMATO DE SALIDA OBLIGATORIO:
 
 📈 RESUMEN EJECUTIVO
-[2-3 líneas concisas sobre el estado general. Incluye:
-- Tendencia de peso (últimas 2-4 semanas)
-- Nivel de actividad (frecuencia semanal)
-- Una observación clave o patrón detectado]
+[2-3 líneas concisas sobre el estado general. Incluye tendencia de peso y nivel de actividad]
 
 🎯 ANÁLISIS DE TENDENCIAS
-
-• Peso y Composición Corporal:
-[Analiza cambios en peso. Especifica:
-- Cambio absoluto en kg (ej: "-1.2kg en 3 semanas")
-- Velocidad de cambio (saludable: 0.5-1kg/semana)
-- Si está en rango óptimo para tenis master (IMC 22-25)
-- Impacto en rendimiento (peso óptimo mejora movilidad en cancha)]
-
-• Actividad Física:
-[Evalúa frecuencia y consistencia. Incluye:
-- Días activos por semana (ideal: 4-6 para tenis master)
-- Distribución de tipos de actividad (tenis vs cardio vs descanso)
-- Gaps preocupantes (>3 días sin actividad)
-- Patrones semanales (ej: "concentrado en martes/jueves/sábado")]
-
-• Rendimiento Deportivo:
-[Analiza métricas de rendimiento:
-- Distancias promedio por tipo de actividad
-- Duración de sesiones (tenis: 60-90min ideal)
-- Calorías quemadas (tendencia)
-- Comparación con semanas anteriores]
+• Peso y Composición Corporal: [Analiza cambios reales en kg]
+• Actividad Física: [Evalúa frecuencia y gaps]
+• Rendimiento Deportivo: [Análisis de distancias y duraciones]
 
 💡 RECOMENDACIONES PRIORITARIAS
-
-1. [TENIS/TÉCNICA]: [Recomendación específica para mejorar rendimiento en tenis master. 
-   Ejemplos: "Aumenta sesiones de movilidad pre-partido", "Incorpora trabajo de core 2x/semana para potencia de saque"]
-
-2. [BIOMECÁNICA/PREVENCIÓN]: [Consejo para prevenir lesiones típicas.
-   Ejemplos: "Fortalece rotadores de hombro para prevenir tendinitis", "Trabajo excéntrico de cuádriceps para proteger rodilla"]
-
-3. [NUTRICIÓN/RECUPERACIÓN]: [Sugerencia sobre alimentación, hidratación o descanso.
-   Ejemplos: "Aumenta proteína post-entrenamiento (30g en 30min)", "Prioriza 7-8h de sueño para recuperación muscular"]
+1. [TENIS/TÉCNICA]: [Específico para tenis master]
+2. [BIOMECÁNICA/PREVENCIÓN]: [Consejo para proteger rodilla/hombro]
+3. [NUTRICIÓN/RECUPERACIÓN]: [Sugerencia sobre alimentación o descanso]
 
 ⚠️ PUNTO DE ATENCIÓN
-[UNA observación crítica que requiere acción inmediata. Puede ser:
-- Riesgo de lesión por sobreentrenamiento
-- Necesidad de descanso activo
-- Gap peligroso en entrenamiento (pérdida de condición)
-- Oportunidad de mejora específica
-- Alerta sobre tendencia negativa en peso/actividad]
+[Observación crítica que requiere acción inmediata]
 
 🎾 INSIGHT ESPECÍFICO DE TENIS
-[Consejo técnico o táctico basado en los datos. Ejemplos:
-- "Tu frecuencia de 3 partidos/semana es óptima para master"
-- "Considera agregar 1 sesión de footwork para mejorar desplazamientos"
-- "El trabajo cardiovascular complementario mejorará tu resistencia en sets largos"]
+[Consejo técnico o táctico basado en los datos]
 
 REGLAS CRÍTICAS:
-✓ USA NÚMEROS REALES de los datos proporcionados (fechas, kg, distancias, calorías)
-✓ SÉ ESPECÍFICO: "bajaste 1.2kg en 3 semanas" NO "has perdido peso"
-✓ MENCIONA TENIS MASTER en contexto relevante
-✓ SEÑALA gaps de actividad si existen (ej: "4 días sin entrenar entre 20-24 enero")
-✓ EVALÚA velocidad de cambio de peso (muy rápido >1kg/sem = alerta)
-✓ TONO: Profesional, motivador pero realista. Como un entrenador de confianza.
-✓ MÁXIMO 300 palabras total
-✓ NO uses placeholders genéricos ("X días", "Y kg") - USA DATOS REALES
-✓ NO repitas información - cada sección debe aportar valor único
-✓ PRIORIZA insights accionables sobre descripciones obvias
-
-CONTEXTO ADICIONAL:
-- Tenis master requiere equilibrio entre potencia, resistencia y prevención de lesiones
-- A los 49 años, la recuperación es más lenta - enfatiza descanso adecuado
-- El peso óptimo mejora movilidad en cancha sin sacrificar potencia
-- La consistencia es más importante que la intensidad extrema"""
+✓ USA NÚMEROS REALES (fechas, kg, km)
+✓ SÉ ESPECÍFICO: "bajaste 1.2kg" NO "has perdido peso"
+✓ MENCIONA TENIS MASTER
+✓ SEÑALA gaps de actividad
+✓ TONO: Profesional, motivador pero realista."""
 
 
             query = f"{system_instruction}\n\n{context}\n\nGenera el análisis ahora:"
@@ -341,8 +495,34 @@ CONTEXTO ADICIONAL:
                 self._analysis_cache = {"timestamp": time.time(), "content": result, "ttl": 900}
                 return result
             except Exception as e:
-                print(f"Coach Analysis Error: {e}")
-                error_msg = "No se pudo generar el análisis debido a límites de cuota de la API."
-                # Cache error for only 2 minutes to allow sooner retry
-                self._analysis_cache = {"timestamp": time.time(), "content": error_msg, "ttl": 120}
-                return error_msg
+                logger.error(f"Coach Analysis Error with Gemini: {e}")
+                
+                # Try fallback to multi-model client
+                if self.multi_model_client:
+                    try:
+                        logger.info("Attempting fallback to multi-model client...")
+                        print("⚠️ Gemini alcanzó límite de cuota. Intentando modelo alternativo...")
+                        
+                        # Use multi-model client (will try other models automatically)
+                        result = self.multi_model_client.generate(
+                            prompt=f"{context}\n\nGenera el análisis ahora:",
+                            system_instruction=system_instruction,
+                            max_tokens=2000
+                        )
+                        
+                        # Save success to cache (15 mins)
+                        self._analysis_cache = {"timestamp": time.time(), "content": result, "ttl": 900}
+                        logger.info("Successfully generated analysis with fallback model")
+                        return result
+                    except Exception as fallback_error:
+                        logger.error(f"Fallback also failed: {fallback_error}")
+                        error_msg = "No se pudo generar el análisis. Todos los modelos alcanzaron sus límites de cuota."
+                        # Cache error for only 2 minutes to allow sooner retry
+                        self._analysis_cache = {"timestamp": time.time(), "content": error_msg, "ttl": 120}
+                        return error_msg
+                else:
+                    print(f"Coach Analysis Error: {e}")
+                    error_msg = "No se pudo generar el análisis debido a límites de cuota de la API."
+                    # Cache error for only 2 minutes to allow sooner retry
+                    self._analysis_cache = {"timestamp": time.time(), "content": error_msg, "ttl": 120}
+                    return error_msg

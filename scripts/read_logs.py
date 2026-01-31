@@ -1,7 +1,7 @@
 import sqlite3
 import json
 
-DB_PATH = r"c:\BioEngine_V3\bioengine_v3.db"
+DB_PATH = r"c:\BioEngine_V3\db\bioengine_v3.db"
 
 def read_logs():
     conn = sqlite3.connect(DB_PATH)
