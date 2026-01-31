@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Dependencias
 node_modules/
 dist/
@@ -24,3 +25,7 @@ logs/
 .vscode/
 .idea/
 .DS_Store
+=======
+.agent/tmp/
+node_modules/
+>>>>>>> d1a067b60927735b71783355d0ed03445a0a5280

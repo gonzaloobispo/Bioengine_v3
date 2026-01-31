@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🏃‍♂️ BioEngine V3 - Sistema de Entrenamiento Inteligente
 
 Contexto rápido para asistentes al abrir una nueva terminal:
@@ -292,3 +293,6 @@ python -c "import sqlite3; conn = sqlite3.connect('db/bioengine_v3.db'); cursor 
 **Versión:** 3.0  
 **Última actualización:** 29 de Enero, 2026  
 **Stack:** Python FastAPI + React + SQLite + Google Gemini AI
+=======
+# Antigravity Template v2
+>>>>>>> d1a067b60927735b71783355d0ed03445a0a5280
