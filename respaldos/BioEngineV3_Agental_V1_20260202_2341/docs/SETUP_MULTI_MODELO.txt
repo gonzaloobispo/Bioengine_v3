@@ -1,0 +1,64 @@
+======================================================================
+CONFIGURACION MULTI-MODELO - ESTADO ACTUAL
+======================================================================
+
+[OK] 1. Google Gemini - CONFIGURADO
+   - Prioridad: 1 y 2
+   - Costo: GRATIS
+   - Modelos: Gemini 2.0 Flash Thinking + Gemini 1.5 Flash
+   - Key: AIzaSyAK7G...rEQnLPrWgo
+
+======================================================================
+MODELOS ADICIONALES (OPCIONALES)
+======================================================================
+
+2. Anthropic Claude 3.5 Sonnet
+   - Prioridad: 3
+   - Costo: FREE TIER ($5 gratis, luego $0.006/mensaje)
+   - Recomendacion: SI (backup gratuito limitado)
+   - Estado: Por defecto BLOQUEADO (no gastara hasta que lo habilites)
+   
+   Para configurar:
+   1. Crea cuenta en: https://console.anthropic.com/
+   2. Genera API key
+   3. Ejecuta: 
+      python -c "import sqlite3; conn = sqlite3.connect(r'c:\BioEngine_V3\bioengine_v3.db'); cursor = conn.cursor(); cursor.execute('INSERT OR REPLACE INTO api_keys (provider, api_key, enabled, priority) VALUES (?, ?, 1, 3)', ('anthropic', 'TU_API_KEY_AQUI')); conn.commit(); conn.close(); print('[OK] Claude configurado')"
+
+3. OpenAI GPT-4 / GPT-3.5
+   - Prioridad: 4 y 5
+   - Costo: PAGA ($0.01-0.02/mensaje)
+   - Recomendacion: NO (muy caro, ChatGPT Plus no ayuda)
+   - Estado: Por defecto BLOQUEADO (no gastara hasta que lo habilites)
+   
+   ADVERTENCIA: ChatGPT Plus solo da acceso a la web, la API es un 
+   servicio SEPARADO que GENERA COSTOS.
+   
+   Para configurar (si realmente quieres):
+   1. Crea API key en: https://platform.openai.com/api-keys
+   2. Ejecuta:
+      python -c "import sqlite3; conn = sqlite3.connect(r'c:\BioEngine_V3\bioengine_v3.db'); cursor = conn.cursor(); cursor.execute('INSERT OR REPLACE INTO api_keys (provider, api_key, enabled, priority) VALUES (?, ?, 1, 4)', ('openai', 'TU_API_KEY_AQUI')); conn.commit(); conn.close(); print('[OK] OpenAI configurado')"
+
+======================================================================
+CONTROL DE COSTOS
+======================================================================
+
+Aunque configures Claude o GPT-4, por defecto estan BLOQUEADOS.
+Solo se usaran si:
+1. Gemini falla completamente Y
+2. Tu los habilitas manualmente con:
+   python backend/services/cost_control.py enable 30  # Por 30 minutos
+
+======================================================================
+VERIFICAR CONFIGURACION
+======================================================================
+
+python -c "import sqlite3; conn = sqlite3.connect(r'c:\BioEngine_V3\bioengine_v3.db'); cursor = conn.cursor(); cursor.execute('SELECT provider, priority, enabled FROM api_keys ORDER BY priority'); rows = cursor.fetchall(); print('\nModelos configurados:'); [print(f'  {p[1]}. {p[0]:15} (enabled={p[2]})') for p in rows]; conn.close()"
+
+======================================================================
+SIGUIENTE PASO
+======================================================================
+
+Inicializa el sistema de control de costos:
+python backend/services/cost_control.py status
+
+Esto creara la tabla model_cost_config y mostrara el estado actual.

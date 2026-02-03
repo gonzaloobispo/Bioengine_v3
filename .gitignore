@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Dependencias
 node_modules/
 dist/
@@ -17,15 +16,15 @@ logs/
 *.log
 %LOG_FILE%
 
-# Bases de datos (Opcional, pero recomendado ignorar el .db y usar un dump o script)
-# bioengine_v3.db
-# bioengine.db
+# Bases de datos 
+# Ignoramos por defecto para evitar subir datos sensibles de salud
+*.db
+!bioengine_seed.db
 
 # IDEs
 .vscode/
 .idea/
 .DS_Store
-=======
+
+# Antigravity Specific
 .agent/tmp/
-node_modules/
->>>>>>> d1a067b60927735b71783355d0ed03445a0a5280
