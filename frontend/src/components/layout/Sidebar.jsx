@@ -17,6 +17,7 @@ const Sidebar = ({ activeView, setActiveView }) => {
         { id: 'overview', label: 'Overview', icon: TrendingUp },
         { id: 'metricas', label: 'KPIs & Peso', icon: BarChart2 },
         { id: 'actividades', label: 'Actividades', icon: Activity },
+        { id: 'planes', label: 'Planes', icon: Calendar },
         { id: 'calendario', label: 'Calendario', icon: Calendar },
         { id: 'biometria', label: 'Biometría', icon: Scale },
         { id: 'equipos', label: 'Equipos', icon: Package },

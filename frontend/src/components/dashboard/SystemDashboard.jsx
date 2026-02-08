@@ -108,8 +108,16 @@ const SystemDashboard = ({ adminToken }) => {
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span>NotebookLM Gateway</span>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)' }}>
-                                <Activity size={16} /> <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>IDLE</span>
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                color: status.notebooklm_connected ? 'var(--accent-green)' : '#f59e0b'
+                            }}>
+                                {status.notebooklm_connected ? <CheckCircle2 size={16} /> : <Activity size={16} />}
+                                <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>
+                                    {status.notebooklm_connected ? 'CONNECTED' : 'STANDBY / IDLE'}
+                                </span>
                             </div>
                         </div>
                     </div>

@@ -25,10 +25,12 @@ DB_PATH = str(DB_DIR / "bioengine_v3.db")
 ADMIN_TOKEN = os.getenv("BIOENGINE_ADMIN_TOKEN", "bioengine-local")
 
 # AI Settings
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # Logging
-LOG_FILE = str(BASE_DIR / "bioengine_v3.log")
-AI_DEBUG_LOG = str(BASE_DIR / "ai_service_debug.log")
-MODEL_FALLBACK_LOG = str(BASE_DIR / "ai_model_fallback.log")
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+LOG_FILE = str(LOG_DIR / "bioengine_v3.log")
+AI_DEBUG_LOG = str(LOG_DIR / "ai_service_debug.log")
+MODEL_FALLBACK_LOG = str(LOG_DIR / "ai_model_fallback.log")

@@ -22,8 +22,8 @@ const CalendarView = ({ activities, normalizeActivityType }) => {
                 animate={{ opacity: 1, y: 0 }}
                 className="card"
             >
-                <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <button
                             onClick={() => setCalendarViewDate(new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() - 1, 1))}
                             className="card"
@@ -31,9 +31,45 @@ const CalendarView = ({ activities, normalizeActivityType }) => {
                         >
                             <ChevronRight style={{ transform: 'rotate(180deg)' }} size={18} />
                         </button>
-                        <span className="card-title" style={{ minWidth: '150px', textAlign: 'center' }}>
-                            {calendarViewDate.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }).toUpperCase()}
-                        </span>
+
+                        <select
+                            value={calendarViewDate.getMonth()}
+                            onChange={(e) => setCalendarViewDate(new Date(calendarViewDate.getFullYear(), parseInt(e.target.value), 1))}
+                            style={{
+                                background: 'rgba(255,255,255,0.05)',
+                                color: 'var(--text-main)',
+                                border: '1px solid var(--border)',
+                                borderRadius: '8px',
+                                padding: '4px 8px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                outline: 'none'
+                            }}
+                        >
+                            {['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'].map((m, i) => (
+                                <option key={i} value={i}>{m}</option>
+                            ))}
+                        </select>
+
+                        <select
+                            value={calendarViewDate.getFullYear()}
+                            onChange={(e) => setCalendarViewDate(new Date(parseInt(e.target.value), calendarViewDate.getMonth(), 1))}
+                            style={{
+                                background: 'rgba(255,255,255,0.05)',
+                                color: 'var(--text-main)',
+                                border: '1px solid var(--border)',
+                                borderRadius: '8px',
+                                padding: '4px 8px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                outline: 'none'
+                            }}
+                        >
+                            {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map(y => (
+                                <option key={y} value={y}>{y}</option>
+                            ))}
+                        </select>
+
                         <button
                             onClick={() => setCalendarViewDate(new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + 1, 1))}
                             className="card"
@@ -46,12 +82,13 @@ const CalendarView = ({ activities, normalizeActivityType }) => {
                         <button
                             onClick={() => setCalendarViewDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1))}
                             style={{
-                                background: 'none',
-                                border: '1px solid var(--border)',
+                                background: 'var(--accent-blue)',
+                                border: 'none',
                                 borderRadius: '8px',
-                                padding: '4px 12px',
-                                color: 'var(--text-muted)',
+                                padding: '6px 12px',
+                                color: '#000',
                                 fontSize: '0.75rem',
+                                fontWeight: 700,
                                 cursor: 'pointer'
                             }}
                         >

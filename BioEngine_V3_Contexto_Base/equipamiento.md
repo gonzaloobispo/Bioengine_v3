@@ -1,4 +1,4 @@
-# 🎒 Inventario de Equipamiento BioEngine (v1)
+# 🎒 Inventario de Equipamiento BioEngine (v2)
 
 Este documento centraliza todo el material deportivo y médico disponible para el usuario. Es utilizado por el **Trainer Assistant** para generar recomendaciones personalizadas y ajustar los planes de entrenamiento.
 
@@ -8,10 +8,11 @@ Este documento centraliza todo el material deportivo y médico disponible para e
 * **Zapatillas Principales**: `ASICS Kayano 31`
   * *Tipo*: Estabilidad (Soporte Pronación)
   * *Uso*: Rodajes largos, series en asfalto.
+  * *Kilometraje*: ~574 km (según Garmin Connect)
 * **Zapatillas Rotación/Reserva**: `Brooks Adrenaline GTS 23`
   * *Tipo*: Estabilidad.
   * *Uso*: Rodajes suaves o regenerativos.
-* **Monitorización**: `Garmin Forerunner 965` (GPS, Pulso, Potencia Estan)
+* **Monitorización**: `Garmin Forerunner 965` (GPS, Pulso, Potencia, Métricas Avanzadas)
 
 ## ⛰️ Trail Running / Trekking
 * **Zapatillas Técnicas**: `Hoka Speedgoat 6`
@@ -24,7 +25,9 @@ Este documento centraliza todo el material deportivo y médico disponible para e
 ## 🚴‍♂️ Ciclismo
 * **Bicicleta**: `Trek FX Sport AL 3`
   * *Tipo*: Fitness / Híbrida.
-  * *Configuración*: Equipada con sensores externos. Un casete de 10 velocidades
+  * *Configuración*: Equipada con sensores externos. Casete de 10 velocidades.
+  * *Kilometraje Total*: ~2,510 km (según Garmin Connect)
+  * *Uso Reciente*: ~60 km
 * **Sensores**:
   * Sensor de Velocidad Garmin (Buje).
   * Sensor de Cadencia Garmin (Biela).
@@ -34,12 +37,13 @@ Este documento centraliza todo el material deportivo y médico disponible para e
 * **Zapatillas**: `Babolat Fury 3`
   * *Tipo*: Court (Soporte lateral reforzado).
   * *Uso*: Partidos y entrenamientos en cancha.
+  * *Sesiones Registradas*: ~74 (según Garmin Connect)
 
 ## 🎒 Accesorios & Indumentaria
 * **Hidratación**: Chaleco `Aonijie` (Para salidas > 60 min).
 * **Recuperación / Soporte**:
   * Medias de compresión (Bajas).
-  * Pantorrilleras de compresión `Aonijie` (Post-reno).
+  * Pantorrilleras de compresión `Aonijie` (Post-entrenamiento).
 * **Ropa**: Remera técnica (Gestión de humedad), Sombrero Adidas (Protección UV).
 
 ## 🏋️‍♂️ Fuerza & Rehabilitación
@@ -52,3 +56,4 @@ Este documento centraliza todo el material deportivo y médico disponible para e
   * *Estado*: **OBLIGATORIAS** en toda actividad de impacto (Running/Trail/Caminata).
   * *Motivo*: Pie plano severo grado III / Pronación excesiva.
 * **Báscula**: Withings (Wi-Fi) -> Conexión directa a API.
+* **Monitorización Cardíaca**: Garmin Forerunner 965 (muñeca) - No se usa Apple Watch Ultra.

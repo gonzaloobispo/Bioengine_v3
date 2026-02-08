@@ -10,6 +10,25 @@ const ChatSidebar = ({
     setInputMessage,
     handleSendMessage
 }) => {
+    const [modelInfo, setModelInfo] = React.useState({ description: 'Cargando...' });
+
+    React.useEffect(() => {
+        const fetchStatus = async () => {
+            try {
+                const res = await fetch('http://localhost:8000/chat/status');
+                const data = await res.json();
+                setModelInfo(data);
+            } catch (e) {
+                console.error("Error al obtener estado del coach", e);
+            }
+        };
+        if (chatOpen) {
+            fetchStatus();
+            const interval = setInterval(fetchStatus, 30000); // Actualizar cada 30s
+            return () => clearInterval(interval);
+        }
+    }, [chatOpen, messages.length]); // Re-fetch when sending messages too
+
     return (
         <>
             <AnimatePresence>
@@ -21,9 +40,19 @@ const ChatSidebar = ({
                         className="chat-sidebar"
                     >
                         <div className="chat-header">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                <div className="status-dot"></div>
-                                <h3>BioEngine Coach</h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    <div className="status-dot"></div>
+                                    <h3 style={{ margin: 0 }}>BioEngine Coach</h3>
+                                </div>
+                                <span style={{
+                                    fontSize: '0.7rem',
+                                    color: 'var(--accent-blue)',
+                                    opacity: 0.8,
+                                    marginLeft: '1.25rem'
+                                }}>
+                                    {modelInfo.description || 'Desconectado'}
+                                </span>
                             </div>
                             <button onClick={() => setChatOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
                                 <X size={20} />

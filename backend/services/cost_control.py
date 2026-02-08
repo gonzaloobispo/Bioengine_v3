@@ -191,6 +191,24 @@ class CostControl:
         conn.commit()
         conn.close()
 
+    def is_usage_allowed(self) -> bool:
+        """
+        Verificación global: ¿Hay algún modelo de pago o free_tier habilitado?
+        Útil para chequeos rápidos antes de intentar caídas de fallback.
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT COUNT(*) FROM model_cost_config 
+            WHERE cost_type IN ('paid', 'free_tier') AND allow_usage > 0
+        """)
+        
+        count = cursor.fetchone()[0]
+        conn.close()
+        
+        return count > 0
+
 
 # CLI para control manual
 if __name__ == "__main__":

@@ -47,35 +47,37 @@ const ActivityTable = ({ activities, normalizeActivityType, calculatePace, getWe
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: idx * 0.03 }}
                             >
-                                <td style={{ fontSize: '0.85rem' }}>
-                                    <div style={{ fontWeight: 600 }}>{new Date(act.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}</div>
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{new Date(act.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</div>
+                                <td style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                                    <span style={{ fontWeight: 600 }}>
+                                        {new Date(act.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                                    </span>
+                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '8px' }}>
+                                        {new Date(act.fecha).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
                                 </td>
-                                <td>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <div className={`activity-icon-mini ${normalizeActivityType(act.tipo).toLowerCase().replace('/', '-')}`}>
-                                            <Activity size={14} />
+                                <td style={{ whiteSpace: 'nowrap' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <div className={`activity-icon-mini ${normalizeActivityType(act.tipo).toLowerCase().replace('/', '-')}`} style={{ minWidth: '14px' }}>
+                                            <Activity size={12} />
                                         </div>
-                                        <div>
-                                            <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{normalizeActivityType(act.tipo)}</div>
-                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{act.nombre || 'Sin nombre'}</div>
-                                        </div>
+                                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{normalizeActivityType(act.tipo)}</span>
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{act.nombre ? `- ${act.nombre}` : ''}</span>
                                     </div>
                                 </td>
-                                <td style={{ fontWeight: 700 }}>{act.distancia_km?.toFixed(2) || '--'} km</td>
-                                <td style={{ color: 'var(--text-muted)' }}>{act.duracion_min?.toFixed(0)} min</td>
-                                <td>
-                                    <span className="badge">
+                                <td style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{act.distancia_km?.toFixed(1) || '--'} km</td>
+                                <td style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{act.duracion_min?.toFixed(0)} min</td>
+                                <td style={{ whiteSpace: 'nowrap' }}>
+                                    <span className="badge" style={{ padding: '2px 6px', fontSize: '0.75rem' }}>
                                         {calculatePace(act.distancia_km, act.duracion_min) || `${(act.distancia_km / (act.duracion_min / 60)).toFixed(1)} km/h`}
                                     </span>
                                 </td>
-                                <td style={{ color: 'var(--accent-blue)', fontWeight: 600 }}>
+                                <td style={{ color: 'var(--accent-blue)', fontWeight: 600, whiteSpace: 'nowrap' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                         <Flame size={14} />
                                         {act.calorias || '--'}
                                     </div>
                                 </td>
-                                <td style={{ fontSize: '0.9rem', color: 'var(--accent-green)', fontWeight: 600 }}>
+                                <td style={{ fontSize: '0.9rem', color: 'var(--accent-green)', fontWeight: 600, whiteSpace: 'nowrap' }}>
                                     {getWeightForDate(act.fecha)} kg
                                 </td>
                                 <td>
@@ -140,21 +142,72 @@ const ActivityTable = ({ activities, normalizeActivityType, calculatePace, getWe
 
             {/* Pagination */}
             {totalPages > 1 && (
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '2rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginTop: '2rem', flexWrap: 'wrap' }}>
                     <button
                         disabled={currentPage === 1}
                         onClick={() => setCurrentPage(prev => prev - 1)}
                         className="card"
-                        style={{ padding: '0.5rem 1rem', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', opacity: currentPage === 1 ? 0.5 : 1 }}
+                        style={{ padding: '0.5rem', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', opacity: currentPage === 1 ? 0.5 : 1, display: 'flex', alignItems: 'center' }}
                     >
                         <ChevronLeft size={18} />
                     </button>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Pagina {currentPage} de {totalPages}</span>
+
+                    {(() => {
+                        const pages = [];
+                        const maxVisible = 5;
+                        let start = Math.max(1, currentPage - 2);
+                        let end = Math.min(totalPages, start + maxVisible - 1);
+
+                        if (end - start < maxVisible - 1) {
+                            start = Math.max(1, end - maxVisible + 1);
+                        }
+
+                        if (start > 1) {
+                            pages.push(
+                                <button key={1} onClick={() => setCurrentPage(1)} className={`page-btn ${currentPage === 1 ? 'active' : ''}`}>1</button>
+                            );
+                            if (start > 2) pages.push(<span key="dots1" style={{ color: 'var(--text-muted)' }}>...</span>);
+                        }
+
+                        for (let i = start; i <= end; i++) {
+                            pages.push(
+                                <button
+                                    key={i}
+                                    onClick={() => setCurrentPage(i)}
+                                    className={`page-btn ${currentPage === i ? 'active' : ''}`}
+                                    style={{
+                                        background: currentPage === i ? 'var(--accent-blue)' : 'rgba(255,255,255,0.05)',
+                                        color: currentPage === i ? '#000' : 'var(--text-main)',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        padding: '0.5rem 0.8rem',
+                                        cursor: 'pointer',
+                                        fontWeight: 700,
+                                        fontSize: '0.8rem',
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                >
+                                    {i}
+                                </button>
+                            );
+                        }
+
+                        if (end < totalPages) {
+                            if (end < totalPages - 1) pages.push(<span key="dots2" style={{ color: 'var(--text-muted)' }}>...</span>);
+                            pages.push(
+                                <button key={totalPages} onClick={() => setCurrentPage(totalPages)} className={`page-btn ${currentPage === totalPages ? 'active' : ''}`}>
+                                    {totalPages}
+                                </button>
+                            );
+                        }
+                        return pages;
+                    })()}
+
                     <button
                         disabled={currentPage === totalPages}
                         onClick={() => setCurrentPage(prev => prev + 1)}
                         className="card"
-                        style={{ padding: '0.5rem 1rem', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', opacity: currentPage === totalPages ? 0.5 : 1 }}
+                        style={{ padding: '0.5rem', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', opacity: currentPage === totalPages ? 0.5 : 1, display: 'flex', alignItems: 'center' }}
                     >
                         <ChevronRight size={18} />
                     </button>

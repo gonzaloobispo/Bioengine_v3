@@ -175,22 +175,43 @@ class ContextManager:
         finally:
             conn.close()
 
-    def log_context_update(self, update_text: str, source: str = "chat") -> None:
-        """Registra una actualización de contexto relevante en evolutionary_memory."""
-        if not update_text:
-            return
-        
+    def log_context_update(self, update_text: str, source: str = "chat"):
+        """
+        Registra una actualización de contexto relevante en evolutionary_memory.
+        Ahora incluye metadatos de procedencia para rastreabilidad.
+        """
         conn = self._get_connection()
         try:
-            conn.execute("""
-                INSERT INTO evolutionary_memory (date, lesson, context, source)
-                VALUES (?, ?, ?, ?)
-            """, (datetime.datetime.now().strftime("%Y-%m-%d"), update_text, f"Registro automático ({source})", source))
+            # Calcular confianza basada en la fuente
+            confidence_map = {
+                "chat": 0.7,      # Usuario directo - confianza media-alta
+                "api": 0.9,       # Datos de API externa - alta confianza
+                "inference": 0.6, # Inferencia de IA - confianza media
+                "manual": 1.0     # Entrada manual verificada - máxima confianza
+            }
+            confidence = confidence_map.get(source, 0.5)
+            
+            # Crear metadatos de procedencia
+            metadata = {
+                "origin": source,
+                "timestamp": datetime.datetime.now().isoformat(),
+                "confidence": confidence,
+                "user_verified": False,  # Requiere verificación humana
+                "version": "1.0"
+            }
+            
+            conn.execute(
+                """INSERT INTO evolutionary_memory (update_text, source, metadata, created_at) 
+                   VALUES (?, ?, ?, ?)""",
+                (update_text, source, json.dumps(metadata), datetime.datetime.now())
+            )
             conn.commit()
+            logger.info(f"Context update logged from {source} with confidence {confidence}")
         except Exception as e:
             logger.error(f"Error logging context update: {e}")
         finally:
             conn.close()
+
 
     def get_semantic_summary_data(self) -> Dict[str, Any]:
         """Retorna datos necesarios para actualizar el resumen semántico."""
@@ -273,3 +294,19 @@ class ContextManager:
         meta = self._get_context_value('metadata') or {}
         meta['last_updated'] = datetime.datetime.now().isoformat()
         self._set_context_value('metadata', meta)
+
+    def get_activity_history(self, days: int = 30) -> List[Dict[str, Any]]:
+        """Obtiene el historial de actividades de los últimos N días."""
+        conn = self._get_connection()
+        try:
+            cutoff_date = (datetime.datetime.now() - datetime.timedelta(days=days)).strftime('%Y-%m-%d')
+            rows = conn.execute(
+                "SELECT * FROM activities WHERE fecha >= ? ORDER BY fecha DESC",
+                (cutoff_date,)
+            ).fetchall()
+            return [dict(r) for r in rows]
+        except Exception as e:
+            logger.error(f"Error reading activity history: {e}")
+            return []
+        finally:
+            conn.close()

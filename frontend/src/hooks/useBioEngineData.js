@@ -50,14 +50,18 @@ const normalizeActivityType = (act) => {
 
     // 2. Running categorization
     if (lowType === 'running' || lowType === 'carrera' || lowType === 'run' || lowType === 'correr') {
-        const isComp = nombre.includes('maraton') || nombre.includes('marathon') || nombre.includes('10k') || nombre.includes('21k') || nombre.includes('42k') || nombre.includes('gp') || nombre.includes('competencia');
+        const nameToSearch = typeof act === 'object' && act.nombre ? act.nombre.toLowerCase() : '';
+        const isComp = nameToSearch.includes('maraton') || nameToSearch.includes('marathon') ||
+            nameToSearch.includes('10k') || nameToSearch.includes('21k') ||
+            nameToSearch.includes('42k') || nameToSearch.includes('gp') ||
+            nameToSearch.includes('competencia') || lowType.includes('competición');
 
         if (isComp) return 'Competición Calle';
-        if (distance > 15 && !nombre.includes('entrenamiento')) return 'Fondo Largo';
+        if (distance > 15 && !nameToSearch.includes('entrenamiento')) return 'Fondo Largo';
         return 'Running Entreno';
     }
 
-    return ACTIVITY_MAP[lowType] || type.charAt(0).toUpperCase() + type.slice(1);
+    return ACTIVITY_MAP[lowType] || (typeof type === 'string' ? type.charAt(0).toUpperCase() + type.slice(1) : 'Otros');
 };
 
 export const useBioEngineData = () => {
@@ -68,7 +72,7 @@ export const useBioEngineData = () => {
     const [syncing, setSyncing] = useState(false);
 
     // AI & Analysis State
-    const [coachAnalysis, setCoachAnalysis] = useState('Analizando tus datos...');
+    const [coachAnalysis, setCoachAnalysis] = useState('📊 Cargando tus datos...');
     const [isAnalysisLoading, setIsAnalysisLoading] = useState(true);
     const [messages, setMessages] = useState([
         { role: 'ai', text: 'Hola Gonzalo. He analizado tus últimos registros. ¿En qué puedo ayudarte?' }
@@ -85,26 +89,66 @@ export const useBioEngineData = () => {
     const [memoryLoading, setMemoryLoading] = useState(false);
 
     const fetchData = useCallback(async () => {
+        setLoading(true);
         try {
-            const [actRes, bioRes, eqRes] = await Promise.all([
-                axios.get(`${API_BASE}/activities`),
-                axios.get(`${API_BASE}/biometrics`),
-                axios.get(`${API_BASE}/equipment`)
-            ]);
-            setActivities(actRes.data);
-            setBiometrics(bioRes.data);
-            setEquipment(eqRes.data);
+            // Fetch core data independently so one failure doesn't block others
+            const fetchActivities = async () => {
+                try {
+                    const res = await axios.get(`${API_BASE}/activities`);
+                    setActivities(Array.isArray(res.data) ? res.data : []);
+                } catch (e) {
+                    console.error("Error loading activities:", e);
+                    setActivities([]);
+                }
+            };
 
-            try {
-                const anaRes = await axios.get(`${API_BASE}/coach-analysis`);
-                setCoachAnalysis(anaRes.data.analysis);
-            } catch (err) {
-                setCoachAnalysis("No se pudo cargar el análisis.");
-            } finally {
-                setIsAnalysisLoading(false);
-            }
+            const fetchBiometrics = async () => {
+                try {
+                    const res = await axios.get(`${API_BASE}/biometrics`);
+                    const data = Array.isArray(res.data) ? res.data : [];
+                    // Ordenar por fecha descendente (más reciente primero)
+                    setBiometrics(data.sort((a, b) => new Date(b.fecha) - new Date(a.fecha)));
+                } catch (e) {
+                    console.error("Error loading biometrics:", e);
+                    setBiometrics([]);
+                }
+            };
+
+            const fetchEquipment = async () => {
+                try {
+                    const res = await axios.get(`${API_BASE}/equipment`);
+                    setEquipment(res.data);
+                } catch (e) {
+                    console.error("Error loading equipment:", e);
+                    setEquipment(null);
+                }
+            };
+
+            await Promise.all([fetchActivities(), fetchBiometrics(), fetchEquipment()]);
+
+            // OPTIMIZACIÓN: Datos cargados, ahora conectar IA
+            setCoachAnalysis("🤖 Conectando con BioEngine Coach...");
+            setIsAnalysisLoading(true);
+
+            const fetchAnalysis = async () => {
+                try {
+                    const anaRes = await axios.get(`${API_BASE}/coach-analysis`, { timeout: 60000 });
+                    setCoachAnalysis(anaRes.data.analysis);
+                } catch (err) {
+                    console.error("Error fetching coach analysis:", err);
+                    setCoachAnalysis("❌ Análisis no disponible. La IA no pudo conectarse.");
+                } finally {
+                    setIsAnalysisLoading(false);
+                }
+            };
+
+            // Pequeño delay para mostrar el mensaje de "Conectando IA"
+            setTimeout(() => {
+                fetchAnalysis();
+            }, 500);
+
         } catch (error) {
-            console.error("Error fetching data:", error);
+            console.error("General error fetching data:", error);
         } finally {
             setLoading(false);
         }
@@ -304,38 +348,96 @@ export const useBioEngineData = () => {
     const kpis = useMemo(() => {
         const totalKm = filteredActivities.reduce((acc, curr) => acc + (Number(curr.distancia_km) || 0), 0);
         const totalHours = filteredActivities.reduce((acc, curr) => acc + (Number(curr.duracion_min) || 0), 0) / 60;
+
+        // El peso más reciente es el primero debido al sort en fetchData
+        const latestWeight = biometrics[0];
+
+        // --- CÁLCULO ACWR (Acute:Chronic Workload Ratio) ---
+        // Carga Aguda: Media de distancia últimos 7 días
+        // Carga Crónica: Media de distancia últimos 28 días
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+        const twentyEightDaysAgo = new Date(now.getTime() - (28 * 24 * 60 * 60 * 1000));
+
+        const acuteKm = activities
+            .filter(a => new Date(a.fecha) >= sevenDaysAgo)
+            .reduce((acc, curr) => acc + (Number(curr.distancia_km) || 0), 0);
+
+        const chronicKm = activities
+            .filter(a => new Date(a.fecha) >= twentyEightDaysAgo)
+            .reduce((acc, curr) => acc + (Number(curr.distancia_km) || 0), 0);
+
+        const acuteAvg = acuteKm / 7;
+        const chronicAvg = chronicKm / 28;
+        const acwrGlobal = chronicAvg > 0 ? (acuteAvg / chronicAvg) : 0;
+
+        // --- ACWR ESPECÍFICO ---
+        const roadActivities = activities.filter(a => {
+            const t = normalizeActivityType(a);
+            return t.includes('Running') || t.includes('Competición') || t.includes('Fondo');
+        });
+        const trailActivities = activities.filter(a => {
+            const t = normalizeActivityType(a);
+            return t === 'Trail Running' || t === 'Hiking/Senderismo';
+        });
+
+        const getACWR = (acts) => {
+            const acute = acts.filter(a => new Date(a.fecha) >= sevenDaysAgo).reduce((acc, curr) => acc + (Number(curr.distancia_km) || 0), 0) / 7;
+            const chronic = acts.filter(a => new Date(a.fecha) >= twentyEightDaysAgo).reduce((acc, curr) => acc + (Number(curr.distancia_km) || 0), 0) / 28;
+            return chronic > 0 ? (acute / chronic) : 0;
+        };
+
+        const acwrRoad = getACWR(roadActivities);
+        const acwrTrail = getACWR(trailActivities);
+
+        // Estado del ACWR según framework 49+ (Usamos el más crítico o el global)
+        const acwr = Math.max(acwrRoad, acwrTrail) || acwrGlobal;
+        let acwrStatus = "ZONA VERDE";
+        let acwrColor = "var(--accent-green)";
+        if (acwr > 1.5) { acwrStatus = "ZONA ROJA (PELIGRO)"; acwrColor = "#ff4b4b"; }
+        else if (acwr > 1.3) { acwrStatus = "ZONA AMARILLA"; acwrColor = "var(--accent-yellow)"; }
+        else if (acwr < 0.8 && chronicAvg > 0) { acwrStatus = "BAJA CARGA"; acwrColor = "var(--accent-blue)"; }
+
         return {
             totalKm: totalKm.toFixed(1),
             totalHours: totalHours.toFixed(1),
             count: filteredActivities.length,
-            lastWeight: biometrics[0]?.peso || '--',
-            lastWeightDate: biometrics[0]?.fecha
+            lastWeight: latestWeight?.peso || '--',
+            lastWeightDate: latestWeight?.fecha,
+            acwr: acwr.toFixed(2),
+            acwrRoad: acwrRoad.toFixed(2),
+            acwrTrail: acwrTrail.toFixed(2),
+            acwrStatus,
+            acwrColor
         };
-    }, [filteredActivities, biometrics]);
+    }, [filteredActivities, activities, biometrics]);
 
     const equipmentStats = useMemo(() => {
         let stats = {
             trail: { km: 0, sessions: 0 },
-            road: { km: 0, sessions: 0 },
-            tennis: { km: 0, sessions: 0 },
-            training: { km: 0, sessions: 0 },
+            kayano: { km: 0, sessions: 0 },
+            brooks: { km: 0, sessions: 0 },
+            tennis: { sessions: 0 },
             bike: { km: 0, sessions: 0 }
         };
         activities.forEach(act => {
-            const type = normalizeActivityType(act.tipo);
+            const type = normalizeActivityType(act);
+
             if (type === 'Trail Running' || type === 'Hiking/Senderismo') {
                 stats.trail.km += act.distancia_km || 0;
                 stats.trail.sessions++;
-            } else if (type === 'Carrera') {
-                if ((act.distancia_km || 0) > 15) {
-                    stats.road.km += act.distancia_km || 0;
-                    stats.road.sessions++;
+            } else if (type.includes('Running') || type.includes('Competición') || type.includes('Fondo')) {
+                // Si la actividad menciona Brooks o es un rodaje suave, va a Brooks
+                // Si menciona Kayano o es una carrera/fondo largo, va a Kayano
+                const nombre = (act.nombre || '').toLowerCase();
+                if (nombre.includes('brooks') || (act.distancia_km < 10 && !type.includes('Competición'))) {
+                    stats.brooks.km += act.distancia_km || 0;
+                    stats.brooks.sessions++;
                 } else {
-                    stats.training.km += act.distancia_km || 0;
-                    stats.training.sessions++;
+                    stats.kayano.km += act.distancia_km || 0;
+                    stats.kayano.sessions++;
                 }
             } else if (type === 'Tenis') {
-                stats.tennis.km += act.distancia_km || 0;
                 stats.tennis.sessions++;
             } else if (type === 'Ciclismo') {
                 stats.bike.km += act.distancia_km || 0;
@@ -346,6 +448,7 @@ export const useBioEngineData = () => {
     }, [activities]);
 
     const availableTypes = useMemo(() => {
+        if (!Array.isArray(activities)) return [];
         const types = new Set(activities.map(act => normalizeActivityType(act)));
         return Array.from(types).sort();
     }, [activities]);

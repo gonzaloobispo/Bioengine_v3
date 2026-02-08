@@ -31,6 +31,10 @@ import MemoryView from './components/dashboard/MemoryView';
 import ChatSidebar from './components/dashboard/ChatSidebar';
 import CalendarView from './components/dashboard/CalendarView';
 import SystemDashboard from './components/dashboard/SystemDashboard';
+import PlansView from './components/dashboard/PlansView';
+import PainTracker from './components/dashboard/PainTracker';
+import ArticularHealthKPIs from './components/dashboard/ArticularHealthKPIs';
+import HITLPanel from './components/dashboard/HITLPanel';
 import Toast from './components/Toast';
 
 const calculatePace = (dist, dur) => {
@@ -184,6 +188,14 @@ function App() {
             </header>
 
             <CoachAnalysisCard analysis={coachAnalysis} isLoading={isAnalysisLoading} />
+            <ArticularHealthKPIs
+              acwr={kpis.acwr}
+              acwrStatus={kpis.acwrStatus}
+              acwrColor={kpis.acwrColor}
+              lastWeight={kpis.lastWeight}
+            />
+            <PainTracker />
+            <HITLPanel showToast={showToast} />
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))', gap: '2rem', marginTop: '2rem' }}>
               <div className="card" style={{ height: '400px' }}>
@@ -192,9 +204,9 @@ function App() {
                   <Scale size={20} color="var(--accent-green)" />
                 </div>
                 <ResponsiveContainer width="100%" height="85%">
-                  <AreaChart data={biometrics.slice(0, 30).reverse()}>
+                  <AreaChart data={[...(biometrics || [])].slice(0, 30).reverse()}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                    <XAxis dataKey="fecha" stroke="var(--text-muted)" fontSize={10} tickFormatter={(val) => val.split('T')[0]} />
+                    <XAxis dataKey="fecha" stroke="var(--text-muted)" fontSize={10} tickFormatter={(val) => val?.split('T')[0]?.split('-').slice(1).reverse().join('/') || ''} />
                     <YAxis stroke="var(--text-muted)" fontSize={10} domain={['dataMin - 1', 'dataMax + 1']} />
                     <Tooltip contentStyle={{ background: '#1a1f35', border: '1px solid var(--border)' }} />
                     <Area type="monotone" dataKey="peso" stroke="var(--accent-green)" fill="var(--accent-green)" fillOpacity={0.1} strokeWidth={2} />
@@ -288,8 +300,9 @@ function App() {
                     }}
                   >
                     <option value="all" style={{ background: '#1a1f35', color: 'white' }}>Todos los deportes</option>
+                    <option value="Competición Calle" style={{ background: '#1a1f35', color: 'var(--accent-green)' }}>🏆 Competencias</option>
                     {availableTypes.map(type => (
-                      <option key={type} value={type} style={{ background: '#1a1f35', color: 'white' }}>{type}</option>
+                      type !== 'Competición Calle' && <option key={type} value={type} style={{ background: '#1a1f35', color: 'white' }}>{type}</option>
                     ))}
                   </select>
 
@@ -348,6 +361,8 @@ function App() {
             normalizeActivityType={normalizeActivityType}
           />
         )}
+
+        {activeView === 'planes' && <PlansView />}
 
         {activeView === 'equipos' && <EquiposView equipment={equipment} equipmentStats={equipmentStats} />}
 

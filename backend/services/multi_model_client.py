@@ -24,51 +24,51 @@ class MultiModelClient:
         self.api_keys = api_keys
         self.cost_control = cost_control
         
-        # Orden de MEJOR a PEOR, priorizando modelos GRATUITOS
+        # Orden SOTA 2026 - Modelos Verificados (Feb 2026)
         self.fallback_order = [
-            # 1. GEMINI 2.0 FLASH (GRATIS con Google AI Studio)
+            # 1. GEMINI 2.5 PRO (SOTA 2026 - Máxima Precisión)
+            {
+                "provider": "gemini", 
+                "model": "gemini-2.5-pro", 
+                "priority": 0, 
+                "cost": "free",
+                "description": "Gemini 2.5 Pro (SOTA 2026)"
+            },
+            
+            # 2. GEMINI 2.5 FLASH (Velocidad Optimizada)
+            {
+                "provider": "gemini", 
+                "model": "gemini-2.5-flash", 
+                "priority": 1, 
+                "cost": "free",
+                "description": "Gemini 2.5 Flash"
+            },
+            
+            # 3. GEMINI 2.0 FLASH (Fallback Estable)
             {
                 "provider": "gemini", 
                 "model": "gemini-2.0-flash", 
-                "priority": 1, 
-                "cost": "free",
-                "description": "Gemini 2.0 Flash (Gratuito)"
-            },
-            
-            # 2. GEMINI 1.5 FLASH (GRATIS con Google AI Studio)
-            {
-                "provider": "gemini", 
-                "model": "gemini-1.5-flash", 
                 "priority": 2, 
                 "cost": "free",
-                "description": "Gemini 1.5 Flash (Gratuito)"
+                "description": "Gemini 2.0 Flash"
             },
             
-            # 3. CLAUDE 3.5 SONNET (Free tier limitado, luego paga)
-            {
-                "provider": "anthropic", 
-                "model": "claude-3-5-sonnet-20241022", 
-                "priority": 3, 
-                "cost": "free_tier",
-                "description": "Claude 3.5 (Free tier limitado)"
-            },
-            
-            # 4. GPT-4 (⚠️ PAGA - ChatGPT Plus NO incluye acceso a API)
+            # 4. GPT-4o (Razonamiento General)
             {
                 "provider": "openai", 
-                "model": "gpt-4-turbo-preview", 
-                "priority": 4, 
+                "model": "gpt-4o", 
+                "priority": 3, 
                 "cost": "paid",
-                "description": "GPT-4 Turbo (⚠️ PAGA ~$0.01/1k tokens)"
+                "description": "GPT-4o (OpenAI Premium)"
             },
             
-            # 5. GPT-3.5 TURBO (⚠️ PAGA pero más barato)
+            # 5. GPT-3.5 TURBO (Económico)
             {
                 "provider": "openai", 
                 "model": "gpt-3.5-turbo", 
-                "priority": 5, 
+                "priority": 4, 
                 "cost": "paid",
-                "description": "GPT-3.5 Turbo (⚠️ PAGA ~$0.001/1k tokens)"
+                "description": "GPT-3.5 Turbo"
             },
         ]
         
@@ -102,11 +102,12 @@ class MultiModelClient:
                 self._log_skip(provider, model, "No API key configurada")
                 continue
             
-            # Advertencia de costo si es modelo pago
-            if cost_type == "paid" and f"{provider}/{model}" not in self.cost_warnings_shown:
-                self._log_cost_warning(provider, model, description)
-                self.cost_warnings_shown.add(f"{provider}/{model}")
-                
+            # 3. Control de costos para modelos pagos/free_tier
+            if cost_type in ["paid", "free_tier"]:
+                if self.cost_control and not self.cost_control.is_provider_allowed(provider):
+                    self._log_skip(provider, model, f"Bloqueado por control de costos (tipo: {cost_type})")
+                    continue
+
             try:
                 self._log_attempt(provider, model, description)
                 
@@ -199,6 +200,128 @@ class MultiModelClient:
         
         return response.text
     
+    async def generate_stream(self, prompt: str, system_instruction: str = "", max_tokens: int = 1000):
+        """
+        Genera respuesta en streaming intentando modelos en orden de fallback.
+        """
+        last_error = None
+        
+        for config in self.fallback_order:
+            provider = config["provider"]
+            model = config["model"]
+            cost_type = config.get("cost", "unknown")
+            description = config.get("description", f"{provider}/{model}")
+            
+            # Verificar si tenemos API key para este proveedor
+            if provider not in self.api_keys or not self.api_keys[provider]:
+                continue
+            
+            # Control de costos para modelos pagos
+            if cost_type in ["paid", "free_tier"]:
+                if self.cost_control and not self.cost_control.is_provider_allowed(provider):
+                    self._log_skip(provider, model, f"Streaming bloqueado por control de costos (tipo: {cost_type})")
+                    continue
+
+            try:
+                self._log_attempt(provider, model, description)
+                
+                # Yield info about which model is starting (optional, maybe too noisy for chat)
+                # yield f"[DEBUG: Usando {description}]\n"
+
+                success = False
+                if provider == "openai":
+                    async for chunk in self._call_openai_stream(prompt, system_instruction, model, max_tokens):
+                        yield chunk
+                        success = True
+                elif provider == "anthropic":
+                    async for chunk in self._call_anthropic_stream(prompt, system_instruction, model, max_tokens):
+                        yield chunk
+                        success = True
+                elif provider == "gemini":
+                    async for chunk in self._call_gemini_stream(prompt, system_instruction, model, max_tokens):
+                        yield chunk
+                        success = True
+                
+                if success:
+                    # Si funcionó, registramos y terminamos
+                    if self.current_provider != provider or self.current_model != model:
+                        self._log_switch(provider, model, description)
+                        self.current_provider = provider
+                        self.current_model = model
+                    return
+
+            except Exception as e:
+                last_error = e
+                self._log_error(provider, model, str(e))
+                # Fallback al siguiente modelo de la lista
+                continue
+        
+        # Si todos fallaron
+        yield f"\n[Error crítico: Todos los modelos de IA fallaron. Último error: {str(last_error)}]"
+
+    async def _call_openai_stream(self, prompt: str, system_instruction: str, model: str, max_tokens: int):
+        """Llama a OpenAI en modo streaming"""
+        try:
+            from openai import AsyncOpenAI
+        except ImportError:
+            raise Exception("openai package not installed.")
+        
+        client = AsyncOpenAI(api_key=self.api_keys["openai"])
+        messages = []
+        if system_instruction:
+            messages.append({"role": "system", "content": system_instruction})
+        messages.append({"role": "user", "content": prompt})
+        
+        response = await client.chat.completions.create(
+            model=model,
+            messages=messages,
+            max_tokens=max_tokens,
+            stream=True
+        )
+        
+        async for chunk in response:
+            if chunk.choices and chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
+
+    async def _call_anthropic_stream(self, prompt: str, system_instruction: str, model: str, max_tokens: int):
+        """Llama a Anthropic en modo streaming"""
+        try:
+            from anthropic import AsyncAnthropic
+        except ImportError:
+            raise Exception("anthropic package not installed.")
+        
+        client = AsyncAnthropic(api_key=self.api_keys["anthropic"])
+        async with client.messages.stream(
+            model=model,
+            max_tokens=max_tokens,
+            system=system_instruction if system_instruction else "You are a helpful assistant.",
+            messages=[{"role": "user", "content": prompt}]
+        ) as stream:
+            async for text in stream.text_stream:
+                yield text
+
+    async def _call_gemini_stream(self, prompt: str, system_instruction: str, model: str, max_tokens: int):
+        """Llama a Gemini en modo streaming asíncrono"""
+        from google import genai
+        from google.genai import types
+        
+        # Usamos el cliente asíncrono de genai
+        client = genai.Client(api_key=self.api_keys["gemini"])
+        
+        config = types.GenerateContentConfig(
+            max_output_tokens=max_tokens,
+            temperature=0.7,
+            system_instruction=system_instruction
+        )
+        
+        async for chunk in await client.aio.models.generate_content_stream(
+            model=model,
+            contents=prompt,
+            config=config
+        ):
+            if chunk.text:
+                yield chunk.text
+
     def _log_skip(self, provider: str, model: str, reason: str) -> None:
         """Registra modelo omitido"""
         msg = f"[{datetime.now().isoformat()}] SKIP: {provider}/{model} - {reason}"

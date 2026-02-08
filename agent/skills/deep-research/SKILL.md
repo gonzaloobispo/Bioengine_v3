@@ -12,12 +12,14 @@ description: Agente de investigación que busca artículos científicos, papers 
 
 ## ⚙️ Workflow
 1. **Trigger:** Solicitud explícita o trigger temporal.
-2. **Búsqueda:** Utilizar herramientas de búsqueda web para encontrar fuentes académicas (PubMed, ResearchGate) o blogs técnicos de primer nivel.
-3. **Análisis:** Resumir los hallazgos en español.
-4. **Integración:** Proponer la adición de este resumen a la Memoria Evolutiva o alertar al Coach sobre el nuevo conocimiento.
+2. **Búsqueda:** Utilizar herramientas de búsqueda web (vía Antigravity) para encontrar fuentes académicas (PubMed, ResearchGate) o blogs técnicos de primer nivel.
+3. **Generación:** Ejecutar `researcher_pro.py` para crear el documento base.
+4. **Análisis:** Resumir los hallazgos en español dentro del documento.
+5. **Integración:** El Coach leerá automáticamente estos archivos al estar en `docs/research/`.
 
-## 🛠️ Scripts / Prompts
-- Este skill se ejecuta principalmente mediante el Agente Antigravity siguiendo este protocolo de búsqueda.
+## 🛠️ Herramientas
+- `researcher_pro.py`: Generador de reportes estructurados.
+- `search_web`: Herramienta primaria para recopilación de datos.
 
 ## 📤 Output
-Documento de investigación en `docs/research/YYYY-MM-research-topic.md`.
+Documento de investigación en `docs/research/YYYYMMDD_topic.md`.

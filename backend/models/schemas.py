@@ -1,20 +1,25 @@
 from pydantic import BaseModel, Field, validator
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
 
 class ActivitySchema(BaseModel):
     """
     Schema para validar datos de actividades importadas (Apple/Garmin).
     """
-    id: Optional[str] = None
-    fecha: datetime 
+    id: Optional[Union[str, int]] = None
+    fecha: Union[datetime, str]
     tipo: str = Field(..., description="Tipo de actividad (Run, Cycle, Strength)")
-    distancia_km: float = Field(ge=0, description="Distancia en kilómetros")
-    duracion_min: float = Field(gt=0, description="Duración en minutos")
-    calorias: int = Field(ge=0)
-    avg_hr: Optional[int] = Field(None, ge=30, le=220)
-    max_hr: Optional[int] = None
-    fuente: str = "Unknown"
+    distancia_km: float = Field(default=0.0, ge=0, description="Distancia en kilómetros")
+    duracion_min: float = Field(default=1.0, gt=0, description="Duración en minutos")
+    calorias: Optional[int] = Field(default=0, ge=0)
+    avg_hr: Optional[int] = Field(None, ge=30, le=220, alias="fc_media")
+    max_hr: Optional[int] = Field(None, ge=30, le=240, alias="fc_max")
+    fuente: Optional[str] = "Unknown"
+    nombre: Optional[str] = None
+
+    class Config:
+        populate_by_name = True
+        extra = "ignore"
     
     @validator('tipo')
     def normalize_type(cls, v):

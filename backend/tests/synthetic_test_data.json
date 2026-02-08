@@ -1,0 +1,89 @@
+[
+    {
+        "id": "runner_001",
+        "type": "runner",
+        "name": "Pedro - Nominal",
+        "metrics": {
+            "cadence_spm": 178,
+            "pronation_degrees": 2.5,
+            "knee_angle": 5.0,
+            "pace_min_km": 5.5,
+            "hr_bpm": 145
+        },
+        "history": [
+            "none"
+        ],
+        "expected_risk": "low"
+    },
+    {
+        "id": "runner_002",
+        "type": "runner",
+        "name": "Maria - Pronación Severa",
+        "metrics": {
+            "cadence_spm": 155,
+            "pronation_degrees": 18.0,
+            "knee_angle": 12.0,
+            "pace_min_km": 6.2,
+            "hr_bpm": 150
+        },
+        "history": [
+            "fascitis_plantar"
+        ],
+        "expected_risk": "high"
+    },
+    {
+        "id": "runner_003",
+        "type": "runner",
+        "name": "Incoherencia Sensor",
+        "metrics": {
+            "cadence_spm": 180,
+            "pronation_degrees": 0,
+            "knee_angle": 5.0,
+            "pace_min_km": 3.0,
+            "hr_bpm": 60
+        },
+        "history": [
+            "none"
+        ],
+        "expected_risk": "critical_data_error"
+    },
+    {
+        "id": "tennis_001",
+        "type": "tennis",
+        "name": "Carlos - Codo de Tenista",
+        "metrics": {
+            "serve_speed_loss_pct": 15.0,
+            "reaction_time_ms": 550,
+            "knee_extension_degrees": 140,
+            "pain_level": 7
+        },
+        "history": [
+            "lateral_epicondylitis"
+        ],
+        "expected_risk": "high"
+    },
+    {
+        "id": "tri_001",
+        "type": "triathlete",
+        "name": "Alex - Fatiga Crónica",
+        "metrics": {
+            "hrv_ms": 15.0,
+            "sleep_score": 40,
+            "training_load": 950,
+            "rpe": 9
+        },
+        "history": [
+            "overtraining_syndrome"
+        ],
+        "expected_risk": "critical_recovery"
+    },
+    {
+        "id": "edge_001",
+        "type": "runner",
+        "name": "Anatomía Imposible",
+        "metrics": {
+            "knee_angle": 360.0
+        },
+        "expected_risk": "validation_error"
+    }
+]

@@ -1,9 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, ChevronUp, ChevronDown } from 'lucide-react';
+import { Brain, ChevronUp, ChevronDown, Clock } from 'lucide-react';
 
 const CoachAnalysisCard = ({ analysis, isLoading }) => {
     const [expanded, setExpanded] = useState(true);
+    const [countdown, setCountdown] = useState(45);
+
+    useEffect(() => {
+        if (isLoading) {
+            setCountdown(45);
+            const interval = setInterval(() => {
+                setCountdown(prev => {
+                    if (prev <= 1) {
+                        clearInterval(interval);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+            return () => clearInterval(interval);
+        }
+    }, [isLoading]);
 
     return (
         <motion.div
@@ -44,7 +61,33 @@ const CoachAnalysisCard = ({ analysis, isLoading }) => {
                         exit={{ height: 0, opacity: 0 }}
                     >
                         <div style={{ padding: '2.5rem', fontSize: '1.1rem', lineHeight: '1.8', whiteSpace: 'pre-line' }}>
-                            {isLoading ? "Analizando tus datos..." : analysis}
+                            {isLoading ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
+                                    <Clock size={48} color="var(--accent-blue)" className="animate-pulse" />
+                                    <div style={{ textAlign: 'center' }}>
+                                        <p style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+                                            {analysis.includes('Cargando') ? '📊 Cargando tus datos...' :
+                                                analysis.includes('Conectando') ? '🤖 Conectando con BioEngine Coach...' :
+                                                    'Generando análisis personalizado...'}
+                                        </p>
+                                        {!analysis.includes('Cargando') && !analysis.includes('Conectando') && (
+                                            <>
+                                                <p style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--accent-blue)' }}>
+                                                    {countdown}s
+                                                </p>
+                                                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                                                    Procesando actividades, peso y estado de rodilla
+                                                </p>
+                                            </>
+                                        )}
+                                        {analysis.includes('Conectando') && (
+                                            <p style={{ fontSize: '0.9rem', color: 'var(--accent-green)', marginTop: '0.5rem' }}>
+                                                ✅ Datos cargados correctamente
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : analysis}
                         </div>
                     </motion.div>
                 )}
