@@ -14,13 +14,14 @@ import {
     Cpu
 } from 'lucide-react';
 import axios from 'axios';
+import { API_BASE } from '../../config';
 
 const SystemDashboard = ({ adminToken }) => {
     const [status, setStatus] = useState(null);
     const [loading, setLoading] = useState(true);
     const [toggling, setToggling] = useState(false);
 
-    const API_BASE = 'http://localhost:8000';
+    // API_BASE is now imported from config
 
     const fetchStatus = async () => {
         try {

@@ -3,7 +3,9 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
-load_dotenv()
+# Ensure we look in the backend directory even if started from root
+ENV_PATH = Path(__file__).parent / ".env"
+load_dotenv(dotenv_path=ENV_PATH)
 
 # Base paths
 # backend/config.py -> backend/ -> root/

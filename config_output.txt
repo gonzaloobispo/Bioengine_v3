@@ -1,0 +1,22 @@
+                         Configuration                         
++-------------------------------------------------------------+
+| Setting                     | Value                         |
+|-----------------------------+-------------------------------|
+| headless                    | False                         |
+| timeout                     | 60                            |
+| debug                       | False                         |
+| default_notebook_id         | None                          |
+| base_url                    | https://notebooklm.google.com |
+| server_name                 | notebooklm-mcp                |
+| stdio_mode                  | True                          |
+| auth.cookies_path           | None                          |
+| auth.profile_dir            | ./chrome_profile_notebooklm   |
+| auth.use_persistent_session | True                          |
+| auth.auto_login             | True                          |
+| auth.import_profile_from    | None                          |
+| auth.export_profile_to      | None                          |
+| auth.skip_manual_login      | False                         |
+| streaming_timeout           | 60                            |
+| response_stability_checks   | 3                             |
+| retry_attempts              | 3                             |
++-------------------------------------------------------------+

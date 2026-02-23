@@ -13,7 +13,7 @@ import {
 
 const BiometricsView = ({ biometrics }) => {
     const lastWeight = biometrics[0]?.peso || '--';
-    const lastWeightDate = biometrics[0]?.fecha ? new Date(biometrics[0].fecha).toLocaleDateString('es-AR') : '--';
+    const lastWeightDate = biometrics[0]?.fecha ? new Date(biometrics[0].fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '--';
 
     return (
         <>
@@ -23,7 +23,12 @@ const BiometricsView = ({ biometrics }) => {
             </header>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card">
+                <motion.div
+                    whileHover={{ y: -5 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="card hover:shadow-lg transition-all cursor-default"
+                >
                     <div className="card-header">
                         <span className="card-title">Peso Actual</span>
                         <Scale size={20} color="var(--accent-green)" />
@@ -34,7 +39,13 @@ const BiometricsView = ({ biometrics }) => {
                     </div>
                 </motion.div>
 
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card">
+                <motion.div
+                    whileHover={{ y: -5 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="card hover:shadow-lg transition-all cursor-default"
+                >
                     <div className="card-header">
                         <span className="card-title">Grasa Corporal</span>
                         <Heart size={20} color="var(--accent-purple)" />
@@ -45,7 +56,13 @@ const BiometricsView = ({ biometrics }) => {
                     </div>
                 </motion.div>
 
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="card">
+                <motion.div
+                    whileHover={{ y: -5 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="card hover:shadow-lg transition-all cursor-default"
+                >
                     <div className="card-header">
                         <span className="card-title">IMC Actual</span>
                         <Activity size={20} color="var(--accent-blue)" />
@@ -60,10 +77,11 @@ const BiometricsView = ({ biometrics }) => {
             </div>
 
             <motion.div
+                whileHover={{ y: -5 }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="card"
+                className="card hover:shadow-lg transition-all cursor-crosshair"
                 style={{ height: '500px' }}
             >
                 <div className="card-header">
@@ -83,7 +101,7 @@ const BiometricsView = ({ biometrics }) => {
                             dataKey="fecha"
                             stroke="var(--text-muted)"
                             fontSize={11}
-                            tickFormatter={(val) => val ? new Date(val).toLocaleDateString('es-AR', { month: 'short', day: 'numeric' }) : ''}
+                            tickFormatter={(val) => val ? new Date(val).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : ''}
                         />
                         <YAxis
                             stroke="var(--text-muted)"
@@ -92,7 +110,7 @@ const BiometricsView = ({ biometrics }) => {
                         />
                         <Tooltip
                             contentStyle={{ background: '#1a1f35', border: '1px solid var(--border)', borderRadius: '12px' }}
-                            labelFormatter={(val) => val ? new Date(val).toLocaleDateString('es-AR') : '--'}
+                            labelFormatter={(val) => val ? new Date(val).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '--'}
                             formatter={(value) => [`${value} kg`, 'Peso']}
                         />
                         <Area

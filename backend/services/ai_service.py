@@ -46,6 +46,9 @@ class AIService:
         self.client = None
         self.context_manager = ContextManager()
         self._analysis_cache = {"timestamp": 0, "content": None}
+        self._gemini_cache_name = None
+        self._gemini_cache_timestamp = 0
+        self._gemini_cache_ttl = 3600  # 1 hora
         self._lock = None
         self._message_count = 0
         # Inicializar Infraestructura Multi-Agente (SOTA 2026)
@@ -79,6 +82,30 @@ class AIService:
             return ctx is not None and len(ctx) > 0
         except Exception:
             return False
+
+    async def check_clinical_lock(self) -> Dict[str, Any]:
+        """
+        Verifica si se debe activar un bloqueo clínico basado en logs de dolor recientes.
+        Regla: Dolor > 3 en los últimos 2 registros.
+        """
+        try:
+            conn = self._get_connection()
+            pain_logs = conn.execute("SELECT level FROM pain_logs ORDER BY created_at DESC LIMIT 2").fetchall()
+            conn.close()
+            
+            if len(pain_logs) < 2:
+                return {"lock": False, "reason": ""}
+                
+            levels = [row['level'] for row in pain_logs]
+            if all(lv > 3 for lv in levels):
+                return {
+                    "lock": True, 
+                    "reason": f"BLOQUEO CLÍNICO ACTIVO: Dolor persistente detectado (Niveles: {levels}). Impacto prohibido."
+                }
+            return {"lock": False, "reason": ""}
+        except Exception as e:
+            logger.error(f"Error checking clinical lock: {e}")
+            return {"lock": False, "reason": ""}
 
     def _get_connection(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path)
@@ -132,7 +159,10 @@ class AIService:
                 for agent in self.agent_registry.get_all().values():
                     agent.model_client = self.client
                     agent._model_name = self.model_name
+                
+                # CRITICAL FIX: Ensure Router gets the client too
                 self.router.model_client = self.client
+                logger.info("Router Agent initialized with Gemini client.")
     
     def _get_all_api_keys(self):
         """Retrieve all API keys for multi-model client."""
@@ -183,11 +213,15 @@ class AIService:
                 except Exception:
                     continue
 
-            context = "CONTEXTO DEL USUARIO (BIOENGINE V3):\n"
+            from datetime import datetime
+            current_date_str = datetime.now().strftime('%Y-%m-%d %H:%M')
+            
+            context = f"CONTEXTO DEL USUARIO (BIOENGINE V3):\nFECHA Y HORA ACTUAL DEL SISTEMA: {current_date_str}\n"
             context += "Últimas Actividades:\n"
             for a in activities:
                 date_str = a.fecha.strftime('%Y-%m-%d') if hasattr(a.fecha, 'strftime') else str(a.fecha)
-                context += f"- {date_str}: {a.tipo}, {a.distancia_km}km, {a.duracion_min}min, {a.calorias}cal\n"
+                hr_info = f", {a.avg_hr} ppm" if a.avg_hr else ""
+                context += f"- {date_str}: {a.tipo}, {a.distancia_km}km, {a.duracion_min}min, {a.calorias}cal{hr_info}\n"
             
             context += "\nÚltima Biometría (Peso):\n"
             for b in biometrics:
@@ -198,7 +232,7 @@ class AIService:
             
         return context
 
-    async def _generate_content_with_retry(self, prompt: str, system_instruction: Optional[str] = None, retries: int = 3) -> str:
+    async def _generate_content_with_retry(self, prompt: str, system_instruction: Optional[str] = None, retries: int = 3, cached_content: str = None) -> str:
         """Helper to call Gemini API via SDK with retry logic for 429 errors."""
         if not self.client:
             self._setup_gemini()
@@ -207,9 +241,14 @@ class AIService:
 
         logger.info(f"Starting API call with model: {self.model_name}")
         
-        config = None
-        if system_instruction:
-            config = types.GenerateContentConfig(system_instruction=system_instruction)
+        config_kwargs = {}
+        if cached_content:
+            # Gemini API restriction: cannot provide system_instruction when using cached_content
+            config_kwargs["cached_content"] = cached_content
+        elif system_instruction:
+            config_kwargs["system_instruction"] = system_instruction
+            
+        config = types.GenerateContentConfig(**config_kwargs) if config_kwargs else None
 
         for attempt in range(retries):
             try:
@@ -271,7 +310,15 @@ class AIService:
         # 1. Obtener contexto vía MCP (Standard V4)
         context = await self.mcp_client.get_full_coach_context()
         
-        # 2. Despachar vía Router
+        # 2. Verificar Bloqueo Clínico (Protección SOTA 2026)
+        clinical_status = await self.check_clinical_lock()
+        context["clinical_status"] = clinical_status
+        
+        if clinical_status["lock"]:
+            # Inyectar advertencia en el mensaje para que el Router sepa que hay bloqueo
+            user_message = f"[CLINICAL_LOCK_ACTIVE: {clinical_status['reason']}] " + user_message
+
+        # 3. Despachar vía Router
         if not self.router:
             # Fallback a lógica de V3 si el router no está inicializado (no debería pasar)
             logger.warning("RouterAgent no inicializado. Usando fallback.")
@@ -310,24 +357,18 @@ class AIService:
             "=== MEMORIA Y CONTEXTO BASE ===\n"
             f"{self.context_manager.get_foundational_context()}\n\n"
             "=== INSTRUCCIONES DE ESPECIALIDAD ===\n"
-            "1. RUNNING & TENIS: Tus consejos deben optimizar el rendimiento en carrera de calle/trail y la agilidad en tenis master.\n"
-            "2. SALUD BIOMECÁNICA: Prioriza la protección de articulaciones (específicamente la rodilla derecha) mediante ejercicios de fortalecimiento y movilidad.\n"
-            "3. ADHERENCIA Y HÁBITOS: Utiliza técnicas de psicología deportiva para fomentar la constancia. Si el usuario muestra desmotivación, ajusta el plan o refuerza los hitos logrados.\n"
-            "4. GENERACIÓN DE PLANES Y EJERCICIOS: Al proponer un plan o ejercicios específicos:\n"
-            "   - Usa TABLAS MARKDOWN o LISTAS NUMERADAS para organizar series, repeticiones y descansos.\n"
-            "   - Incluye una GUÍA DE EJECUCIÓN (2-3 líneas) para cada ejercicio, explicando la técnica correcta y puntos clave de seguridad.\n"
-            "   - Especifica el PROPÓSITO BIOMECÁNICO de cada ejercicio (ej: 'Poliquin Step-Up → Fortalece vasto medial → Protege rodilla en descensos').\n"
-            "   - Formato ejemplo:\n"
-            "     **Ejercicio 1: Sentadilla Búlgara**\n"
-            "     - Series: 3 x 12 reps por pierna\n"
-            "     - Descanso: 90 segundos\n"
-            "     - Ejecución: Pie trasero elevado, rodilla delantera alineada con tobillo, descenso controlado.\n"
-            "     - Propósito: Fortalecimiento unilateral del cuádriceps y glúteo, mejora estabilidad de rodilla.\n\n"
+            "1. DOLOR Y REHAB: Si el usuario informa dolor físico: [COMMAND: LOG_PAIN: nivel, zona, lado]. RECOMIENDA inmediatamente un protocolo de 'REHAB PROTOCOLS' basado en la intensidad.\n"
+            "2. CLÍNICA (ATENOLOL): El usuario toma Atenolol 50mg. Es un betabloqueante que reduce significativamente la FC Max y la respuesta cronotrópica. "
+            "DEBES interpretar cualquier pulso alto (>125 bpm) como un esfuerzo extremo mas alla del umbral clínico. "
+            "Usa siempre la referencia de la fórmula de Brawner (FC Max ≈ 164 - 0.7*edad) para tus consejos. "
+            "MENCIONA explícitamente cómo el Atenolol influye en su eficiencia aeróbica (ej: 'Tu pulso es bajo, pero tu ritmo en Z2 es excelente para tu condición actual bajo medicación').\n"
+            "3. RUNNING & TENIS: Tus consejos deben optimizar el rendimiento en carrera de calle/trail y la agilidad en tenis master.\n"
+            "4. SALUD BIOMECÁNICA: Prioriza la protección de articulaciones (específicamente la rodilla derecha) mediante ejercicios de fortalecimiento y movilidad.\n"
+            "5. ADHERENCIA Y HÁBITOS: Utiliza técnicas de psicología deportiva para fomentar la constancia.\n"
+            "6. MÉTRICAS TÉCNICAS: Sé extremadamente preciso con las unidades. RUNNING: spm (objetivo 170-180). CICLISMO: rpm (objetivo 85-95).\n"
+            "7. GENERACIÓN DE PLANES: Usa tablas markdown, incluye propósitos biomecánicos para cada ejercicio.\n\n"
             "Tus respuestas deben ser precisas, motivadoras pero realistas, y basadas tanto en los datos históricos como en el conocimiento base.\n"
             "IMPORTANTE: Ten en cuenta la línea de tiempo y las restricciones de lesiones activas.\n\n"
-            "=== AUTO-ACTUALIZACIÓN DE MEMORIA ===\n"
-            "Si el usuario informa dolor físico: [COMMAND: LOG_PAIN: nivel]\n"
-            "Si el usuario confirma que completó un entrenamiento: [COMMAND: UPDATE_CONTEXT: se completó X ejercicio].\n"
             "Habla en español de forma natural y profesional."
         )
 
@@ -372,11 +413,13 @@ class AIService:
 
         processed_response = response
         if "[COMMAND:" in response:
-            pain_match = re.search(r"\[COMMAND: LOG_PAIN: (\d+)\]", response)
+            pain_match = re.search(r"\[COMMAND: LOG_PAIN: (\d+)(?:,\s*(.+?))?(?:,\s*(.+?))?\]", response)
             if pain_match:
                 level = int(pain_match.group(1))
-                self.context_manager.log_pain(level, f"Registrado vía chat: {user_message[:100]}")
-                logger.info(f"Pain logged from AI response: {level}")
+                location = pain_match.group(2) or "Rodilla"
+                side = pain_match.group(3) or "derecha"
+                self.context_manager.log_pain(level, f"Registrado vía chat: {user_message[:100]}", location=location, side=side, source="ai_chat")
+                logger.info(f"Pain logged from AI response: {level} ({location} {side})")
 
             update_match = re.search(r"\[COMMAND: UPDATE_CONTEXT: (.+?)\]", response)
             if update_match:
@@ -419,14 +462,18 @@ class AIService:
             "=== MEMORIA Y CONTEXTO BASE ===\n"
             f"{self.context_manager.get_foundational_context()}\n\n"
             "=== INSTRUCCIONES DE ESPECIALIDAD ===\n"
-            "1. RUNNING & TENIS: Tus consejos deben optimizar el rendimiento en carrera de calle/trail y la agilidad en tenis master.\n"
-            "2. SALUD BIOMECÁNICA: Prioriza la protección de articulaciones (específicamente la rodilla derecha) mediante ejercicios de fortalecimiento y movilidad.\n"
-            "3. ADHERENCIA Y HÁBITOS: Utiliza técnicas de psicología deportiva para fomentar la constancia. Si el usuario muestra desmotivación, ajusta el plan o refuerza los hitos logrados.\n"
-            "4. GENERACIÓN DE PLANES: Tienes la capacidad de proponer micro-sesiones de ejercicio adaptadas a la etapa física actual del usuario (registrada en su historial médico y de dolor).\n\n"
+            "1. CLÍNICA (ATENOLOL): El usuario toma Atenolol 50mg. Es un betabloqueante que reduce significativamente la FC Max y la respuesta cronotrópica. "
+            "DEBES interpretar cualquier pulso alto (>125 bpm) como un esfuerzo extremo mas alla del umbral clínico. "
+            "Usa siempre la referencia de la fórmula de Brawner (FC Max ≈ 164 - 0.7*edad) para tus consejos.\n"
+            "2. RUNNING & TENIS: Tus consejos deben optimizar el rendimiento en carrera de calle/trail y la agilidad en tenis master.\n"
+            "3. SALUD BIOMECÁNICA: Prioriza la protección de articulaciones (específicamente la rodilla derecha) mediante ejercicios de fortalecimiento y movilidad.\n"
+            "4. ADHERENCIA Y HÁBITOS: Utiliza técnicas de psicología deportiva para fomentar la constancia.\n"
+            "5. MÉTRICAS TÉCNICAS: Sé extremadamente preciso con las unidades. RUNNING: spm (objetivo 170-180). CICLISMO: rpm (objetivo 85-95).\n"
+            "6. GENERACIÓN DE PLANES: Usa tablas markdown, incluye propósitos biomecánicos para cada ejercicio.\n\n"
             "Tus respuestas deben ser precisas, motivadoras pero realistas, y basadas tanto en los datos históricos como en el conocimiento base.\n"
             "IMPORTANTE: Ten en cuenta la línea de tiempo y las restricciones de lesiones activas.\n\n"
             "=== AUTO-ACTUALIZACIÓN DE MEMORIA ===\n"
-            "Si el usuario informa dolor físico: [COMMAND: LOG_PAIN: nivel]\n"
+            "Si el usuario informa dolor físico: [COMMAND: LOG_PAIN: nivel, zona, lado] (ej: [COMMAND: LOG_PAIN: 4, Rodilla, izquierda])\n"
             "Si el usuario confirma que completó un entrenamiento: [COMMAND: UPDATE_CONTEXT: se completó X ejercicio].\n"
             "Habla en español de forma natural y profesional."
         )
@@ -460,11 +507,13 @@ class AIService:
 
         # --- Post-procesamiento de Comandos (Invisible para el yield, pero ejecuta lógica) ---
         if "[COMMAND:" in full_response_accumulator:
-            pain_match = re.search(r"\[COMMAND: LOG_PAIN: (\d+)\]", full_response_accumulator)
+            pain_match = re.search(r"\[COMMAND: LOG_PAIN: (\d+)(?:,\s*(.+?))?(?:,\s*(.+?))?\]", full_response_accumulator)
             if pain_match:
                 level = int(pain_match.group(1))
-                self.context_manager.log_pain(level, f"Registrado vía chat (Stream): {user_message[:100]}")
-                logger.info(f"Pain logged from AI response (Stream): {level}")
+                location = pain_match.group(2) or "Rodilla"
+                side = pain_match.group(3) or "derecha"
+                self.context_manager.log_pain(level, f"Registrado vía chat (Stream): {user_message[:100]}", location=location, side=side, source="ai_chat_stream")
+                logger.info(f"Pain logged from AI response (Stream): {level} ({location} {side})")
 
             update_match = re.search(r"\[COMMAND: UPDATE_CONTEXT: (.+?)\]", full_response_accumulator)
             if update_match:
@@ -531,7 +580,194 @@ class AIService:
             if summary_text:
                 self.context_manager.set_semantic_summary(summary_text, total_count)
 
+    async def analyze_video_technique(self, video_path: str) -> dict:
+        """Sube un video de entrenamiento, usa Gemini Vision para analizar cadencia, posturas, etc."""
+        if not self.AI_ENABLED:
+            return {"summary": "Modo IA desactivado. Activa la IA para analizar el video.", "metrics": {}, "feedback": []}
+            
+        if not self.client:
+            self._setup_gemini()
+        if not self.client:
+            return {"summary": "Gemini API no configurada.", "metrics": {}, "feedback": []}
+            
+        logger.info(f"Subiendo video para análisis biomecánico: {video_path}")
+        try:
+            # Upload video using the GenAI SDK
+            # Since client.files.upload is sync, we run it in a thread if needed, but it's okay for now
+            import asyncio
+            video_file = await asyncio.to_thread(self.client.files.upload, file=video_path)
+            logger.info(f"Video subido: {video_file.name}")
+            
+            prompt = """Eres un experto en biomecánica deportiva y entrenamiento (running y tenis). 
+Analiza este video del atleta en detalle. Retorna un JSON con exactitud la siguiente estructura, sin texto extra fuera del JSON (sin backticks de markdown):
+{
+  "summary": "Resumen general de 2-3 líneas de la biomecánica observada.",
+  "metrics": {
+    "cadencia_visual": "Valor estimado (ej: 170)",
+    "oscilacion_vertical": "Baja/Moderada/Alta",
+    "valgo_rodilla": "No/Leve/Severo (Indica lado si es evidente)"
+  },
+  "feedback": [
+    "Sugerencia accionable 1",
+    "Sugerencia accionable 2",
+    "Sugerencia de ejercicio compensatorio"
+  ]
+}
+"""
+            from google.genai import types
+            
+            # Use SDK to generate content
+            response = await self.client.aio.models.generate_content(
+                model=self.model_name,
+                contents=[video_file, prompt],
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json"
+                )
+            )
+            
+            # Clean up the file from Gemini storage
+            try:
+                await asyncio.to_thread(self.client.files.delete, name=video_file.name)
+            except Exception as e:
+                logger.error(f"Error borrando archivo de Gemini: {e}")
+                
+            if not response.text:
+                return {"summary": "Gemini no devolvió respuesta.", "metrics": {}, "feedback": []}
+                
+            import json
+            try:
+                # Intenta parsear el texto devuelto
+                data = json.loads(response.text)
+                return data
+            except json.JSONDecodeError:
+                # Fallback por si devuelve markdown con backticks
+                cleaned = response.text.replace('```json', '').replace('```', '').strip()
+                return json.loads(cleaned)
+                
+        except Exception as e:
+            logger.error(f"Error analizando video con Gemini: {e}")
+            return {
+                "summary": f"Hubo un error procesando el video: {str(e)}",
+                "metrics": {
+                    "cadencia_visual": "N/A",
+                    "oscilacion_vertical": "N/A",
+                    "valgo_rodilla": "N/A"
+                },
+                "feedback": ["Intenta subir otro video o intenta más tarde."]
+            }
 
+    def clear_analysis_cache(self):
+        """Invalidates the coach analysis cache to force regeneration on next request."""
+        self._analysis_cache["timestamp"] = 0
+        self._analysis_cache["content"] = None
+        logger.info("Coach analysis cache invalidated.")
+
+    def _fetch_analysis_db_data(self):
+        """Helper to fetch DB data in a separate thread."""
+        conn = self._get_connection()
+        try:
+            # Get last 50 activities for better trend analysis
+            raw_activities = conn.execute("SELECT * FROM activities ORDER BY fecha DESC LIMIT 50").fetchall()
+            # Get last 5 weight measurements for trend
+            raw_biometrics = conn.execute("SELECT * FROM biometrics ORDER BY fecha DESC LIMIT 5").fetchall()
+            # Get recent pain logs
+            pain_logs = conn.execute("SELECT date, level, location, notes FROM pain_logs ORDER BY created_at DESC LIMIT 5").fetchall()
+
+            activities = []
+            for row in raw_activities:
+                try:
+                    activities.append(ActivitySchema(**dict(row)))
+                except ValidationError:
+                    continue
+
+            biometrics = []
+            for row in raw_biometrics:
+                try:
+                    biometrics.append(BodyCompositionSchema(**dict(row)))
+                except ValidationError:
+                    continue
+            
+            # Construct DB Context String immediately to save passing objects
+            profile = self.context_manager._get_context_value('perfil_usuario') or {}
+            birth_date = profile.get('fecha_nacimiento')
+            age = self.context_manager.calculate_age(birth_date) if birth_date else profile.get('edad', 49)
+            athlete_name = profile.get('nombre', 'Gonzalo')
+
+            context = f"DATOS DEL ATLETA ({athlete_name} - {age} años, Tenis Master):\n\n"
+            context += "📊 ACTIVIDADES RECIENTES:\n"
+            if activities:
+                total_km = sum(a.distancia_km or 0 for a in activities)
+                total_time = sum(a.duracion_min or 0 for a in activities)
+                activity_types = {}
+                for a in activities:
+                    tipo = a.tipo or 'Desconocido'
+                    activity_types[tipo] = activity_types.get(tipo, 0) + 1
+                    date_str = a.fecha.strftime('%Y-%m-%d') if hasattr(a.fecha, 'strftime') else str(a.fecha)
+                    
+                    # Format technical metrics
+                    hr_info = f"FC: {a.avg_hr or '-'}/{a.max_hr or '-'} ppm"
+                    cad_info = f"Cad: {a.cadencia_media or '-'} rpm"
+                    speed_info = f"Vel: {a.velocidad_media or '-'} avg / {a.velocidad_maxima or '-'} max km/h"
+                    elev_info = f"Elev: +{a.elevacion_m or 0}/-{a.elevacion_perdida or 0} m"
+                    
+                    context += f"  • {date_str}: {tipo} | {a.distancia_km}km | {a.duracion_min}min | {hr_info} | {cad_info} | {speed_info} | {elev_info}\n"
+                context += f"\nRESUMEN: {len(activities)} acts, {total_km:.1f}km, {total_time:.0f}min\n"
+            else:
+                context += "  No hay actividades recientes.\n"
+            
+            context += "\n⚖️ TENDENCIA DE PESO:\n"
+            if biometrics:
+                latest = biometrics[0]
+                context += f"  • Actual: {latest.peso}kg ({latest.fecha})\n"
+            else:
+                context += "  No data.\n"
+
+            context += "\n🦵 HISTORIAL DE DOLOR:\n"
+            if pain_logs:
+                for p in pain_logs:
+                     try:
+                        pain_date = p['date'].split('T')[0] if 'T' in p['date'] else p['date']
+                     except:
+                        pain_date = str(p['date'])
+                     context += f"  • {pain_date}: Nivel {p['level']}/10 - {p['notes']}\n"
+            else:
+                context += "  • Sin registros recientes.\n"
+
+            return activities, biometrics, pain_logs, context, age
+            
+        finally:
+            conn.close()
+    
+    async def _get_or_create_context_cache(self, system_instruction: str) -> Optional[str]:
+        """Creates or returns a Gemini cache ID for static manuals."""
+        now = time.time()
+        if self._gemini_cache_name and (now - self._gemini_cache_timestamp < self._gemini_cache_ttl):
+            return self._gemini_cache_name
+            
+        try:
+            logger.info("Generador de Cache Gemini: Obteniendo manuales estáticos desde MCP...")
+            static_manuals = await self.mcp_client.get_static_manuals()
+            
+            cache_config = types.CreateCachedContentConfig(
+                system_instruction=system_instruction,
+                contents=[static_manuals],
+                ttl="3600s"
+            )
+            
+            logger.info("Generador de Cache Gemini: Enviando manuales a Gemini...")
+            cache = await asyncio.to_thread(
+                self.client.caches.create,
+                model=self.model_name,
+                config=cache_config
+            )
+            
+            self._gemini_cache_name = cache.name
+            self._gemini_cache_timestamp = now
+            logger.info(f"✅ Gemini Context Cache Creada con éxito: {cache.name}")
+            return self._gemini_cache_name
+        except Exception as e:
+            logger.error(f"Error creando Gemini Context Cache: {e}")
+            return None
 
     async def get_coach_analysis(self) -> str:
         # Return static message if AI is paused
@@ -564,95 +800,50 @@ El análisis de IA está temporalmente pausado mientras se resuelven límites de
                 if not self.api_key:
                     return "Configura tu API Key para ver el análisis."
 
-            # Get enhanced context with more data points
-            conn = self._get_connection()
-            try:
-                # Get last 50 activities for better trend analysis (including synced competitions)
-                raw_activities = conn.execute("SELECT * FROM activities ORDER BY fecha DESC LIMIT 50").fetchall()
-                # Get last 5 weight measurements for trend
-                raw_biometrics = conn.execute("SELECT * FROM biometrics ORDER BY fecha DESC LIMIT 5").fetchall()
-
-                activities: List[ActivitySchema] = []
-                for row in raw_activities:
-                    try:
-                        activities.append(ActivitySchema(**dict(row)))
-                    except ValidationError as e:
-                        logger.warning(f"Skipping invalid activity {row['id']}: {e}")
-
-                biometrics: List[BodyCompositionSchema] = []
-                for row in raw_biometrics:
-                    try:
-                        biometrics.append(BodyCompositionSchema(**dict(row)))
-                    except ValidationError as e:
-                        logger.warning(f"Skipping invalid biometric {row['id']}: {e}")
-                
-                # Build detailed context
-                context = "DATOS DEL ATLETA (Gonzalo - 49 años, Tenis Master):\n\n"
-                
-                # Activity summary
-                context += "📊 ACTIVIDADES RECIENTES:\n"
-                if activities:
-                    total_km = sum(a.distancia_km or 0 for a in activities)
-                    total_time = sum(a.duracion_min or 0 for a in activities)
-                    activity_types = {}
-                    for a in activities:
-                        tipo = a.tipo or 'Desconocido'
-                        activity_types[tipo] = activity_types.get(tipo, 0) + 1
-                        # Note: fecha is datetime object now if parsed correctly, or str if schema keeps it str. 
-                        # We defined datetime in schema, so let's format it.
-                        date_str = a.fecha.strftime('%Y-%m-%d') if hasattr(a.fecha, 'strftime') else str(a.fecha)
-                        context += f"  • {date_str}: {tipo} - {a.distancia_km or 0}km, {a.duracion_min or 0}min, {a.calorias or 0}cal\n"
-                    
-                    context += f"\nRESUMEN: {len(activities)} actividades, {total_km:.1f}km totales, {total_time:.0f}min\n"
-                    context += f"Tipos: {', '.join([f'{k} ({v})' for k, v in activity_types.items()])}\n"
-                else:
-                    context += "  No hay actividades registradas recientemente.\n"
-                
-                # Weight trend
-                context += "\n⚖️ TENDENCIA DE PESO:\n"
-                if biometrics and len(biometrics) >= 2:
-                    latest = biometrics[0]
-                    oldest = biometrics[-1]
-                    diff = latest.peso - oldest.peso
-                    date_latest = latest.fecha if isinstance(latest.fecha, str) else latest.fecha.strftime('%Y-%m-%d')
-                    date_oldest = oldest.fecha if isinstance(oldest.fecha, str) else oldest.fecha.strftime('%Y-%m-%d')
-                    
-                    context += f"  • Actual: {latest.peso}kg ({date_latest})\n"
-                    context += f"  • Anterior: {oldest.peso}kg ({date_oldest})\n"
-                    context += f"  • Cambio: {diff:+.2f}kg\n"
-                    if latest.grasa_pct:
-                        context += f"  • Grasa corporal: {latest.grasa_pct}%\n"
-                elif biometrics:
-                    b = biometrics[0]
-                    date_b = b.fecha if isinstance(b.fecha, str) else b.fecha.strftime('%Y-%m-%d')
-                    context += f"  • Peso actual: {b.peso}kg ({date_b})\n"
-                else:
-                    context += "  No hay datos de peso disponibles.\n"
-                
-                # Agregar datos de dolor de rodilla
-                context += "\n🦵 HISTORIAL DE DOLOR DE RODILLA:\n"
-                pain_logs = conn.execute("SELECT date, level, location, notes FROM pain_logs ORDER BY created_at DESC LIMIT 5").fetchall()
-                if pain_logs:
-                    for p in pain_logs:
-                        pain_date = p['date'].split('T')[0] if 'T' in p['date'] else p['date']
-                        context += f"  • {pain_date}: Nivel {p['level']}/10 - {p['notes']}\n"
-                else:
-                    context += "  • No hay registros de dolor.\n"
-                    
-            finally:
-                conn.close()
+            # --- OPTIMIZACIÓN DE VELOCIDAD SOTA (Paralelización) ---
+            # Ejecutamos la lectura de DB y la consulta MCP en paralelo
             
-            # Get pain history from database
-            # NEW: Get context via MCP (Standard V4 Zero-Copy)
-            mcp_ctx = await self.mcp_client.get_full_coach_context()
+            async def fetch_db_data():
+                 return await asyncio.to_thread(self._fetch_analysis_db_data)
+
+            async def fetch_mcp_data():
+                return await self.mcp_client.get_full_coach_context(include_static=False)
+
+            # Lanza ambas tareas a la vez
+            db_results, mcp_ctx = await asyncio.gather(fetch_db_data(), fetch_mcp_data())
+            
+            # Desempaquetar resultados de DB
+            activities, biometrics, pain_logs, context, age = db_results
+
+            # --- CONSTRUCCIÓN DEL PROMPT ---
             
             # Extract and format data for the reasoning engine
             try:
                 pain_history = json.loads(mcp_ctx.get('pain_history', '[]'))
                 if not isinstance(pain_history, list):
                     pain_history = []
-            except:
+            except Exception:
                 pain_history = []
+            
+            # Si no hay historial de dolor en los logs, intentar sacar el nivel del perfil médico
+            if not pain_history and 'historial_medico_resumido' in str(mcp_ctx.get('user_context', '')):
+                try:
+                    user_ctx_raw = mcp_ctx.get('user_context', '{}')
+                    # Intentar encontrar el nivel_dolor_actual en el JSON stringificado del servidor MCP
+                    import re
+                    match = re.search(r'"nivel_dolor_actual":\s*(\d+)', user_ctx_raw)
+                    updated_at_match = re.search(r'"updated_at":\s*"([^"]+)"', user_ctx_raw)
+                    if match:
+                        level = int(match.group(1))
+                        date_str = updated_at_match.group(1).split('T')[0] if updated_at_match else "Reciente"
+                        pain_history.append({
+                            "date": date_str,
+                            "level": level,
+                            "location": "Rodilla",
+                            "notes": "Valor reportado en perfil médico"
+                        })
+                except Exception as e:
+                    logger.warning(f"Error parsing medical pain level: {e}")
                 
             foundational = f"""
 ## PERFIL Y CONTEXTO DE USUARIO (MCP)
@@ -661,92 +852,40 @@ El análisis de IA está temporalmente pausado mientras se resuelven límites de
 ## PLAN DE ENTRENAMIENTO (Knowledge Hub)
 {mcp_ctx.get('training_plan', 'No disponible')}
 
-## MANUAL TÉCNICO DE FISIOTERAPIA
-{mcp_ctx.get('manual_fisioterapia', 'No disponible')}
-
 - Peso/Composición: {mcp_ctx.get('weight')}
 - Frecuencia Cardíaca/HRV: {mcp_ctx.get('heart_rate')}
 
 ## EQUIPAMIENTO Y ODÓMETRO
 {mcp_ctx.get('equipment', 'No disponible')}
-
-## MANUAL MASTER 49+ (PROTOCOLO 9 DÍAS)
-{mcp_ctx.get('manual_master_49', 'No disponible')}
 """
             
-            # Build SYSTEM 2 CHAIN-OF-THOUGHT PROMPT
-            prompt = f"""Eres el Coach de BioEngine, un entrenador experto para atletas máster. 
-Analiza los datos del usuario usando RAZONAMIENTO DELIBERATIVO (System 2).
+            # Build SYSTEM 2 RACIONAL PROMPT (NUEVA ESTRUCTURA DIRECTA)
+            prompt = f"""Eres el Coach de BioEngine. Analiza los datos del usuario elaborando un informe directo, ameno y **SIN REITERAR CONCEPTOS**.
+            
+CONTEXTO DB LOCAL:
+{context}
 
-**IMPORTANTE: Sigue estos pasos de pensamiento ANTES de generar tu análisis:**
+CONTEXTO MEMORIA CENTRAL:
+{foundational}
 
-## PASO 1: PENSAR (Análisis de Datos)
-Examina los datos disponibles e identifica patrones clave:
-- ¿Qué tendencias observas en actividades, peso y dolor?
-- ¿Hay señales de alarma o mejoras significativas?
-- ¿Los datos son consistentes con el perfil médico del usuario?
+## ESTRUCTURA DEL INFORME (OBLIGATORIA)
+Redacta un único informe cohesionado que siga exactamente este orden analítico, usando subtítulos claros (markdown) para cada punto, pero sin incluir resúmenes duplicados (ej. TL;DR) al principio ni al final.
 
-## PASO 2: VERIFICAR (Restricciones de Seguridad)
-Comprueba contra estas restricciones médicas CRÍTICAS:
-- ✅ NO recomendar ejercicios de alto impacto si dolor > 3/10
-- ✅ NO aumentar carga más de 10% por semana (atleta máster)
-- ✅ RESPETAR tendinosis rotuliana activa (evitar saltos, sprints en frío)
-- ✅ RESPETAR pronación severa/pie plano (uso obligatorio de plantillas)
-- ✅ RESPETAR psoas acortado (estiramientos diarios obligatorios)
-- ✅ RESPETAR recuperación máster (48-72h entre sesiones del mismo grupo muscular)
+### 1. Última Actividad y Evolución del Rendimiento
+- **Comienza directamente** hablando de la última actividad física registrada.
+- Resalta los puntos fuertes y lo que se puede mejorar, aplicando técnicas de psicología deportiva (adherencia al hábito y motivación).
+- Compara esta actividad con las anteriores del mismo tipo para evidenciar mejoras o estancamientos a lo largo del tiempo.
 
-## PASO 3: SIMULAR (Consecuencias)
-Antes de recomendar algo, pregúntate:
-- ¿Qué pasaría si el usuario sigue esta recomendación dado su estado actual?
-- ¿Hay riesgos de lesión o sobrecarga?
-- ¿Es sostenible a largo plazo?
+### 2. Peso, Impacto y Salud Articular
+- Analiza la evolución del peso reciente.
+- **Relación Impacto/Peso:** Evalúa la cantidad de esfuerzos físicos de alto impacto (correr, tenis, etc.) realizados frente al peso corporal actual y al peso que tenía al hacerlos.
+- Usa este cruce de datos para evaluar objetivamente el riesgo o daño potencial sobre la rodilla. Relaciona esto con el historial de dolor de rodilla de forma concisa.
 
-## PASO 4: DECIDIR (Generar Análisis)
-Basándote en los pasos anteriores, genera tu análisis con este formato OBLIGATORIO:
+### 3. Análisis del Plan de Ejercicio y Siguientes Pasos
+- Realiza un análisis crítico del plan de entrenamiento que debe seguir ahora.
+- Detalla de forma directa cuáles son los caminos o rutinas a tomar a continuación, justificando las elecciones (por ejemplo, si hay riesgo alto en la rodilla, enfocar en ciclismo y fuerza sin impacto).
 
-## ⚙️ RAZONAMIENTO DEL ENTRENADOR (System 2)
-### Paso 1: Pensamiento Crítico y Análisis de Datos
-[Razonamiento sobre tendencias de peso, dolor y entrenamiento detectados]
-
-### Paso 2: Verificación de Restricciones y Seguridad
-[Cruzamiento de datos con historial médico y reglas del manual]
-
-### Paso 3: Simulación de Resultados
-[Evaluación de riesgos/beneficios de las recomendaciones propuestas]
-
-### Paso 4: Decisión y Síntesis Final
-[Justificación técnica de las acciones recomendadas]
-
----
-
-# 🏃‍♂️ Análisis del Coach BioEngine
-
-## 📊 RESUMEN EJECUTIVO
-[2-3 líneas del estado general: ¿Está progresando? ¿Hay alertas?]
-
-## ⚖️ PESO Y COMPOSICIÓN
-• Peso actual: [X kg el DD/MM/YYYY]
-• Tendencia: [Mejorando/Estable/Empeorando - explicar cambio en últimas semanas]
-• Interpretación: [Impacto en el rendimiento y salud articular]
-
-## 🦵 ESTADO DE RODILLA
-• Último registro de dolor: [Nivel X/10 el DD/MM/YYYY - SIEMPRE mostrar el último registro, incluso si es 0]
-• Tendencia: [Mejorando/Estable/Empeorando basado en historial]
-• Interpretación: [Si nivel = 0: "Excelente estado, ventana óptima para progresión controlada". Si nivel > 0: análisis de restricciones]
-• Recomendación inmediata: [Si nivel = 0: "Aprovechar para ejercicios de Fase 2-3 del plan". Si nivel > 0: acciones específicas según nivel]
-
-## 🏃 ÚLTIMA ACTIVIDAD Y EVOLUCIÓN
-• Actividad: [Tipo - Distancia - Duración - Fecha]
-• Comparación evolutiva: [Comparar con actividades similares previas: ¿mejoró el ritmo? ¿aumentó la distancia?]
-• Análisis técnico: [FC media, elevación si aplica, cadencia]
-
-## 💪 RECOMENDACIONES PRIORIZADAS
-1. **[Acción más importante]**: [Explicación detallada con referencia al manual de entrenamiento]
-2. **[Segunda acción]**: [Explicación]
-3. **[Tercera acción]**: [Explicación]
-
-## ⚠️ ALERTAS Y PRECAUCIONES
-[Si hay restricciones activas o riesgos detectados, listarlos aquí. Si todo está bien, decir "Sin alertas activas"]
+**RESTRICCIÓN ABSOLUTA:** NO repitas conceptos. Cada sección debe avanzar en la historia del análisis sin volver a explicar algo de la sección anterior. Conserva siempre el mismo orden (Actividad -> Peso/Rodilla -> Plan).
 
 ---
 
@@ -757,30 +896,34 @@ Basándote en los pasos anteriores, genera tu análisis con este formato OBLIGAT
 **HISTORIAL DE DOLOR:**
 {json.dumps(pain_history, indent=2, ensure_ascii=False)}
 
-**CONTEXTO BASE (Perfil Médico, Equipamiento, Manual):**
-{foundational[:50000]}... [Contexto completo disponible]
+**CONTEXTO RECORTADO:**
+{foundational}
 
-**AHORA GENERA TU ANÁLISIS SIGUIENDO LOS 4 PASOS DE RAZONAMIENTO Y EL FORMATO OBLIGATORIO.**
+Genera el informe siguiendo estrictamente la estructura paso a paso.
 """
 
             # Generate analysis using Gemini with System 2 reasoning
-            system_instruction = """Eres un entrenador deportivo experto especializado en atletas máster (49+ años).
-Tu prioridad es la SEGURIDAD y la prevención de lesiones. 
-Usa razonamiento deliberativo (System 2) para tomar decisiones informadas.
+            system_instruction = f"""Eres un entrenador deportivo experto especializado en atletas máster ({age}+ años).
+Tu prioridad es la SEGURIDAD y la prevención de lesiones articulares.
+Usa razonamiento deliberativo internamente, pero presenta los resultados de forma directa y amena para el usuario.
 
-IMPORTANTE: Antes de generar tu análisis final, PIENSA EN VOZ ALTA siguiendo los 4 pasos:
-1. PENSAR: Analiza los datos y patrones. **REVISA EL ODÓMETRO DEL EQUIPAMIENTO (especialmente la Trek FX Sport AL 3 > 2500km).**
-2. VERIFICAR: Comprueba restricciones médicas y **CITAR EL PROTOCOLO DE 9 DÍAS del Manual Master 49+**.
-3. SIMULAR: Evalúa consecuencias de tus recomendaciones.
-4. DECIDIR: Genera el análisis final.
+IMPORTANTE: 
+1. **Analiza patrones:** Evalúa la adherencia al hábito de ejercicio. Revisa el odómetro del equipo activo.
+2. **Cuidado Articular:** Cita el protocolo de 9 días del Manual Master {age}+ si el usuario viene de un esfuerzo alto.
+3. **Formatos Técnicos:** Usa 'spm' para running y 'rpm' para ciclismo. 
 
-SIEMPRE sigue el formato de análisis especificado y añade una sección de 'MANTENIMIENTO DE EQUIPO' si detectas umbrales superados.
+REGLA DE FORMATO: EL INFORME DEBE SER DIRECTO, SIN RESÚMENES REITERATIVOS. Sigue el flujo cronológico paso a paso.
+PRECISIÓN DE DATOS: Cada vez que menciones un nivel de dolor, DEBES incluir su fecha entre paréntesis, ej: (0/10 el 15/02/26).
 """
+
+            # Generar caché si es necesario antes de hacer la llamada
+            cache_name = await self._get_or_create_context_cache(system_instruction)
 
             try:
                 response_text = await self._generate_content_with_retry(
                     prompt=prompt,
-                    system_instruction=system_instruction
+                    system_instruction=system_instruction,
+                    cached_content=cache_name
                 )
                 
                 # Cache the analysis with dynamic TTL
@@ -800,8 +943,6 @@ SIEMPRE sigue el formato de análisis especificado y añade una sección de 'MAN
             except Exception as e:
                 logger.error(f"Error generating coach analysis: {e}", exc_info=True)
                 return f"Error al generar análisis: {str(e)}"
-            finally:
-                conn.close()
 
     async def analyze_biomechanics_video(self, video_path: str, analysis_type: str = 'gait') -> AthleteBiometrics2026:
         """

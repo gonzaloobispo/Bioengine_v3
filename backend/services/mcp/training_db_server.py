@@ -33,7 +33,7 @@ def get_pain_history() -> str:
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
-            "SELECT * FROM pain_logs ORDER BY timestamp DESC"
+            "SELECT * FROM pain_logs ORDER BY created_at DESC"
         ).fetchall()
         conn.close()
         return json.dumps([dict(row) for row in rows], indent=2, ensure_ascii=False)

@@ -1,0 +1,411 @@
+Sync triggered at 2026-02-10 15:31:30.051263
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'error', 'message': 'Error renovando token Withings'}
+Sync triggered at 2026-02-10 15:33:24.400665
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'error', 'message': "Error renovando token Withings. Detalle: ERROR_REFRESH: Refresh failed: {'status': 503, 'body': {}, 'error': 'Invalid Params: invalid refresh_token'}"}
+Sync triggered at 2026-02-10 15:34:56.633242
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'error', 'message': 'Token de Withings expirado. Por favor, re-conecte su cuenta desde el panel.'}
+Sync triggered at 2026-02-13 11:27:12.129734
+Garmin result: {'status': 'success', 'added': 1}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-13 11:30:19.996673
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-16 20:20:36.314475
+Garmin result: {'status': 'success', 'added': 1}
+Withings result: {'status': 'success', 'added': 3}
+Sync triggered at 2026-02-16 20:21:55.768659
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-17 00:23:40.038391
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-17 22:53:02.262443
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 2}
+Sync triggered at 2026-02-17 23:02:08.359091
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-17 23:31:54.005693
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-17 23:37:33.456553
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-17 23:53:21.125986
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 00:03:15.809933
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 00:08:45.574570
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 00:15:13.692380
+Sync triggered at 2026-02-18 00:15:13.968311
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 00:18:10.510286
+Sync triggered at 2026-02-18 00:18:11.388962
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 00:29:44.783210
+Sync triggered at 2026-02-18 00:29:44.783832
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 00:31:57.365775
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 00:43:00.118258
+Sync triggered at 2026-02-18 00:43:00.119182
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 00:55:53.864222
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 00:59:41.622953
+Sync triggered at 2026-02-18 00:59:41.623090
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 01:08:41.159402
+Sync triggered at 2026-02-18 01:08:41.160036
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 01:12:03.193477
+Sync triggered at 2026-02-18 01:12:03.500020
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 01:16:39.671175
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'error', 'message': "Timeout o Error en Withings: HTTPSConnectionPool(host='wbsapi.withings.net', port=443): Read timed out. (read timeout=10)"}
+Sync triggered at 2026-02-18 01:18:21.371625
+Sync triggered at 2026-02-18 01:18:21.680006
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 01:21:27.299820
+Sync triggered at 2026-02-18 01:21:27.615119
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 01:22:57.727186
+Sync triggered at 2026-02-18 01:22:57.727658
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 01:25:22.346356
+Sync triggered at 2026-02-18 01:25:22.716509
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 01:34:02.869429
+Sync triggered at 2026-02-18 01:34:02.873345
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 01:36:40.153066
+Sync triggered at 2026-02-18 01:36:40.154182
+Sync triggered at 2026-02-18 01:37:01.370808
+Sync triggered at 2026-02-18 01:37:01.681160
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 01:37:34.983890
+Sync triggered at 2026-02-18 01:37:34.987325
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 01:40:49.815419
+Sync triggered at 2026-02-18 01:40:49.819513
+Sync triggered at 2026-02-18 01:43:10.170429
+Sync triggered at 2026-02-18 01:43:10.174235
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 01:44:10.244029
+Sync triggered at 2026-02-18 01:44:10.244976
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 01:45:16.844851
+Sync triggered at 2026-02-18 01:45:16.846179
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 01:46:38.394438
+Sync triggered at 2026-02-18 01:46:38.395491
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 01:47:50.142841
+Sync triggered at 2026-02-18 01:47:50.298649
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 01:57:16.594108
+Sync triggered at 2026-02-18 01:57:16.895076
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'error', 'message': "Error renovando token Withings. Detalle: ERROR_REFRESH: Refresh failed: {'status': 601, 'body': {'wait_seconds': 68}, 'error': 'Same arguments in less than 10 seconds'}"}
+Sync triggered at 2026-02-18 02:02:41.414680
+Sync triggered at 2026-02-18 02:02:41.415140
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 02:03:27.463835
+Sync triggered at 2026-02-18 02:03:27.703961
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 02:06:22.434870
+Sync triggered at 2026-02-18 02:06:22.436534
+Sync triggered at 2026-02-18 14:46:49.047515
+Sync triggered at 2026-02-18 23:34:59.835188
+Sync triggered at 2026-02-18 23:35:00.094921
+Sync triggered at 2026-02-18 23:35:07.195465
+Sync triggered at 2026-02-18 23:35:07.199752
+Garmin result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-18 23:41:38.436342
+Garmin result: {'status': 'ok', 'message': 'Garmin ya está al día'}
+Withings result: {'status': 'success', 'added': 2}
+Sync triggered at 2026-02-18 23:48:39.747119
+Garmin result: {'status': 'ok', 'message': 'Garmin ya está al día'}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-19 00:01:50.304444
+Sync triggered at 2026-02-19 00:01:50.309008
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-19 00:08:54.291979
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-19 00:25:15.076279
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-19 00:42:46.970758
+Sync triggered at 2026-02-19 00:42:47.233901
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-19 02:43:11.091746
+Sync triggered at 2026-02-19 02:43:11.093876
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 1}
+Withings result: {'status': 'error', 'message': "Error renovando token Withings. Detalle: ERROR_REFRESH: Refresh failed: {'status': 601, 'body': {'wait_seconds': 76}, 'error': 'Same arguments in less than 10 seconds'}"}
+Sync triggered at 2026-02-19 02:50:19.427362
+Sync triggered at 2026-02-19 02:50:19.735654
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-19 02:55:14.000815
+Sync triggered at 2026-02-19 02:55:14.304564
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-19 22:49:22.465917
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 1}
+Sync triggered at 2026-02-19 22:53:18.153226
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-19 23:04:38.191080
+Sync triggered at 2026-02-19 23:04:38.479002
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-19 23:32:27.150130
+Sync triggered at 2026-02-19 23:32:27.416876
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-19 23:39:39.963097
+Sync triggered at 2026-02-19 23:39:40.272885
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-19 23:42:31.525431
+Sync triggered at 2026-02-19 23:42:31.820741
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-19 23:50:42.826361
+Sync triggered at 2026-02-19 23:50:42.827096
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-19 23:58:41.702392
+Sync triggered at 2026-02-19 23:58:41.704651
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-19 23:59:27.419693
+Sync triggered at 2026-02-19 23:59:27.423336
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-20 00:05:54.695388
+Sync triggered at 2026-02-20 00:05:54.696110
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-20 13:20:32.352046
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 1}
+Sync triggered at 2026-02-20 13:22:37.983198
+Sync triggered at 2026-02-20 13:22:37.985024
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-20 13:38:22.795761
+Garmin result: {'status': 'success', 'added': 1}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-20 13:43:09.300588
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-20 13:55:42.660152
+Sync triggered at 2026-02-20 13:55:42.954329
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-20 14:25:22.210167
+Sync triggered at 2026-02-20 14:25:22.212800
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-20 14:39:10.660706
+Sync triggered at 2026-02-20 14:39:10.964947
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-21 14:27:28.780649
+Garmin result: {'status': 'success', 'added': 1}
+Withings result: {'status': 'success', 'added': 2}
+Sync triggered at 2026-02-21 14:48:53.800018
+Sync triggered at 2026-02-21 14:48:53.802557
+Garmin result: {'status': 'ok', 'message': 'Garmin ya está al día'}
+Garmin result: {'status': 'ok', 'message': 'Garmin ya está al día'}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-21 17:01:38.256609
+Garmin result: {'status': 'ok', 'message': 'Garmin ya está al día'}
+Withings result: {'status': 'success', 'added': 1}
+Sync triggered at 2026-02-21 17:05:20.120472
+Garmin result: {'status': 'ok', 'message': 'Garmin ya está al día'}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-21 17:31:31.314087
+Garmin result: {'status': 'ok', 'message': 'Garmin ya está al día'}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-21 17:32:28.687645
+Garmin result: {'status': 'ok', 'message': 'Garmin ya está al día'}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-21 17:37:51.854253
+Garmin result: {'status': 'ok', 'message': 'Garmin ya está al día'}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-21 17:39:29.913452
+Garmin result: {'status': 'ok', 'message': 'Garmin ya está al día'}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-22 16:24:53.413105
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-22 16:27:04.267107
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-22 16:33:28.045041
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-22 18:12:41.694320
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-22 18:21:59.077934
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-22 18:32:47.483105
+Sync triggered at 2026-02-22 18:32:48.000867
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-22 18:43:15.750468
+Sync triggered at 2026-02-22 18:43:25.182872
+Garmin result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-22 18:44:02.589299
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-22 18:52:54.306218
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-22 20:14:01.614106
+Sync triggered at 2026-02-22 20:14:08.639394
+Garmin result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-22 20:14:37.138635
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-22 20:59:28.184454
+Sync triggered at 2026-02-22 20:59:28.897482
+Garmin result: {'status': 'success', 'added': 0}
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-22 21:42:18.505970
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-22 22:18:07.977137
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-22 22:27:53.414423
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}
+Sync triggered at 2026-02-22 22:49:47.371489
+Garmin result: {'status': 'success', 'added': 0}
+Withings result: {'status': 'success', 'added': 0}

@@ -22,6 +22,12 @@ class TargetMetric(BaseModel):
     metric_type: MetricType
     value: str = Field(..., description="Ej: 'Zona 2', '5:30 min/km', '150W'")
 
+class WorkoutItem(BaseModel):
+    name: str
+    sets: Optional[int] = None
+    reps: Optional[Union[int, str]] = None
+    intensity: Optional[str] = None # Ej: "70% RM", "RPE 8"
+
 class TrainingSession(BaseModel):
     date: date
     type: SessionType
@@ -29,6 +35,7 @@ class TrainingSession(BaseModel):
     description: str
     duration_min: int
     targets: List[TargetMetric] = []
+    workout_list: List[WorkoutItem] = []
     is_completed: bool = False
     notes: Optional[str] = None
 

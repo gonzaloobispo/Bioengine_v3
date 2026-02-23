@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BioEngine V4 - Recovery Analysis</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#7f13ec",
+                        "background-light": "#f7f6f8",
+                        "background-dark": "#191022",
+                        "card-dark": "#251b30",
+                        "alert-red": "#ff4d4d",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .ios-blur {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white min-h-screen font-display antialiased overflow-hidden">
+<!-- Status Bar Spacer (iOS) -->
+<div class="h-12 w-full"></div>
+<!-- Main Container (Phone Viewport) -->
+<main class="relative max-w-md mx-auto h-[calc(100vh-3rem)] flex flex-col px-6">
+<!-- Header -->
+<header class="flex items-center justify-between py-4 sticky top-0 z-10">
+<button class="p-2 -ml-2 rounded-full hover:bg-white/10">
+<span class="material-icons text-white">arrow_back_ios_new</span>
+</button>
+<h1 class="text-xl font-bold tracking-tight text-white">Análisis de Recuperación</h1>
+<div class="w-10 h-10 rounded-full border border-primary/30 p-0.5">
+<img alt="Profile" class="w-full h-full rounded-full object-cover" data-alt="Professional master athlete portrait profile picture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHtn9Zfa3utyu8c2Fn9GgOqY-pbRaBziR8s7I9xR8VvmKxbD1oX46W3c7LR-ITzjaWy2CdeoHy2jYQ0CEoJiHo25oD3SNw_T1Ov9PzgWzdUdSzpUmAqtV5v08mBD22qfJLRPqsJhA0z1MkNICoBMx3Hgf_8lojZxHIm67ROh0wTlbZboTIi2nuCID4O4WhxJKpWW5oGXInc5zQHDjzyN-vfasKF_GYNiZof8bZNwdpQDeo2hkC4zonX3AX1rGSpsUewmySZDMG65a4"/>
+</div>
+</header>
+<!-- Metric Grid -->
+<div class="grid grid-cols-2 gap-4 mt-6">
+<!-- HRV Metric Card (Target for Tutorial) -->
+<div class="relative z-30 p-5 rounded-xl bg-white dark:bg-card-dark border border-alert-red/40 shadow-[0_0_20px_rgba(255,77,77,0.15)]">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-icons text-alert-red text-lg">favorite</span>
+<span class="text-sm font-medium opacity-70">VFC (HRV)</span>
+</div>
+<div class="text-3xl font-bold text-alert-red">35<span class="text-base ml-1">ms</span></div>
+<div class="mt-2 inline-flex items-center px-2 py-0.5 rounded-full bg-alert-red/20 text-alert-red text-[10px] font-bold uppercase tracking-wider">
+                    Low - Red Zone
+                </div>
+</div>
+<!-- Sleep Metric Card -->
+<div class="p-5 rounded-xl bg-white dark:bg-card-dark border border-white/5 shadow-lg">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-icons text-blue-400 text-lg">dark_mode</span>
+<span class="text-sm font-medium opacity-70">Sueño</span>
+</div>
+<div class="text-3xl font-bold text-white">5h 30m</div>
+<div class="mt-2 inline-flex items-center px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-500 text-[10px] font-bold uppercase tracking-wider">
+                    Poor
+                </div>
+</div>
+</div>
+<!-- Recommendation Card -->
+<div class="mt-6 p-6 rounded-xl bg-gradient-to-br from-primary/10 to-transparent border border-primary/30 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-3 opacity-10">
+<span class="material-icons text-6xl">insights</span>
+</div>
+<div class="flex items-center gap-2 mb-4">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+<h2 class="text-lg font-bold text-primary">Alerta de Fatiga</h2>
+</div>
+<p class="text-lg leading-relaxed text-white/90">
+                Tu VFC está un <span class="font-bold text-alert-red">20% por debajo</span> de la media. Se recomienda descanso activo hoy.
+            </p>
+<div class="mt-4 flex items-center gap-3 text-sm text-white/60">
+<span class="material-icons text-sm">info</span>
+<span>BioEngine V4 AI Recommendation</span>
+</div>
+</div>
+<!-- Graph Section (Subtle background) -->
+<div class="mt-8 flex-1">
+<h3 class="text-sm font-medium opacity-50 uppercase tracking-widest mb-4">Tendencia Semanal</h3>
+<div class="w-full h-32 flex items-end justify-between gap-2 px-2">
+<div class="w-full bg-white/5 rounded-t-sm h-[60%]"></div>
+<div class="w-full bg-white/5 rounded-t-sm h-[80%]"></div>
+<div class="w-full bg-white/5 rounded-t-sm h-[75%]"></div>
+<div class="w-full bg-white/5 rounded-t-sm h-[90%]"></div>
+<div class="w-full bg-white/5 rounded-t-sm h-[85%]"></div>
+<div class="w-full bg-alert-red/40 rounded-t-sm h-[35%]"></div>
+<div class="w-full bg-alert-red rounded-t-sm h-[25%] shadow-[0_0_10px_rgba(255,77,77,0.5)]"></div>
+</div>
+<div class="flex justify-between mt-2 text-[10px] opacity-40 font-medium">
+<span>LUN</span><span>MAR</span><span>MIE</span><span>JUE</span><span>VIE</span><span>SAB</span><span class="text-alert-red opacity-100">HOY</span>
+</div>
+</div>
+<!-- Footer Actions -->
+<footer class="py-8 flex flex-col gap-3">
+<button class="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-[0_8px_30px_rgb(127,19,236,0.3)] hover:opacity-90 active:scale-[0.98] transition-all">
+                Aceptar Descanso
+            </button>
+<button class="w-full py-4 bg-transparent border border-white/20 text-white font-semibold rounded-xl hover:bg-white/5 transition-all">
+                Ver Detalles
+            </button>
+</footer>
+<!-- iOS Home Indicator -->
+<div class="h-1.5 w-32 bg-white/20 rounded-full mx-auto mb-2"></div>
+</main>
+<!-- Tutorial Overlay -->
+<div class="fixed inset-0 z-20 bg-black/70 ios-blur pointer-events-none">
+<!-- Masking Cutout Effect Simulation -->
+<div class="absolute inset-0 flex flex-col">
+<!-- Top section above the card -->
+<div class="h-[12.5rem] w-full bg-transparent"></div>
+<!-- Middle row containing the focus -->
+<div class="flex h-[8.5rem]">
+<div class="w-6 bg-transparent"></div>
+<div class="w-[calc(50%-1.25rem)] bg-transparent rounded-xl ring-[2000px] ring-black/70"></div>
+<div class="flex-1 bg-transparent"></div>
+</div>
+</div>
+<!-- Tooltip Bubble -->
+<div class="absolute top-[22rem] left-6 right-6 pointer-events-auto">
+<div class="bg-blue-600 text-white p-5 rounded-2xl shadow-2xl relative">
+<!-- Tooltip Arrow -->
+<div class="absolute -top-2 left-10 w-4 h-4 bg-blue-600 rotate-45"></div>
+<div class="flex gap-3">
+<span class="material-icons">tips_and_updates</span>
+<p class="text-sm font-medium leading-relaxed">
+                        La <span class="font-bold">Variabilidad de Frecuencia Cardíaca</span> indica tu estado de estrés fisiológico real. Un valor bajo sugiere fatiga acumulada.
+                    </p>
+</div>
+<div class="mt-4 flex justify-end">
+<button class="px-4 py-1.5 bg-white/20 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-white/30 transition-colors">
+                        Entendido
+                    </button>
+</div>
+</div>
+</div>
+</div>
+</body></html>

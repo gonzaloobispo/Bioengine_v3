@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, AlertTriangle, Check, X, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_BASE } from '../../config';
 
 const HITLPanel = ({ showToast }) => {
     const [actions, setActions] = useState([]);
@@ -8,7 +9,7 @@ const HITLPanel = ({ showToast }) => {
 
     const fetchActions = async () => {
         try {
-            const response = await fetch('http://localhost:8000/hitl/pending');
+            const response = await fetch(`${API_BASE}/hitl/pending`);
             const data = await response.json();
             setActions(data);
         } catch (error) {
@@ -26,7 +27,7 @@ const HITLPanel = ({ showToast }) => {
 
     const handleAction = async (actionId, approved) => {
         try {
-            const response = await fetch('http://localhost:8000/hitl/approve', {
+            const response = await fetch(`${API_BASE}/hitl/approve`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action_id: actionId, approved })

@@ -380,9 +380,11 @@ class MultiModelClient:
                     "cost": config.get("cost", "unknown")
                 }
         
+        # If none used yet, return the default top priority model (SOTA)
+        default_config = self.fallback_order[0]
         return {
-            "provider": self.current_provider or "ninguno",
-            "model": self.current_model or "ninguno",
-            "description": "No inicializado",
-            "cost": "unknown"
+            "provider": self.current_provider or default_config["provider"],
+            "model": self.current_model or default_config["model"],
+            "description": default_config.get("description", "Gemini 2.5 Pro (SOTA 2026)"),
+            "cost": default_config.get("cost", "free")
         }

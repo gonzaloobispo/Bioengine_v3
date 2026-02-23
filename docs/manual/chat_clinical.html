@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#7f13ec",
+                        "background-light": "#f7f6f8",
+                        "background-dark": "#191022",
+                        "clinical-red": "#ff3b30",
+                        "surface-dark": "#251b2e",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Space Grotesk', sans-serif; }
+        .ios-blur { backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        .gradient-bg { background: radial-gradient(circle at top right, #2d134d 0%, #191022 100%); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen font-display">
+<!-- Phone Container (iOS Simulation) -->
+<div class="max-w-[430px] mx-auto min-h-screen relative shadow-2xl overflow-hidden flex flex-col gradient-bg">
+<!-- Status Bar Space (iOS) -->
+<div class="h-12 w-full flex justify-between items-end px-8 pb-2">
+<span class="text-sm font-semibold">9:41</span>
+<div class="flex gap-1.5 items-center">
+<span class="material-icons text-sm">signal_cellular_alt</span>
+<span class="material-icons text-sm">wifi</span>
+<span class="material-icons text-sm">battery_full</span>
+</div>
+</div>
+<!-- Header -->
+<header class="sticky top-0 z-30 ios-blur bg-background-dark/80 border-b border-primary/20 px-6 py-4 flex items-center gap-4">
+<button class="text-primary">
+<span class="material-icons">arrow_back_ios</span>
+</button>
+<div class="flex flex-col">
+<h1 class="text-lg font-bold tracking-tight">Chat with BioEngine Coach</h1>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+<span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">V4 Clinical Active</span>
+</div>
+</div>
+<div class="ml-auto">
+<div class="w-10 h-10 rounded-full border-2 border-primary overflow-hidden">
+<img alt="Master Athlete Profile" class="w-full h-full object-cover" data-alt="Portrait of an athletic master male runner" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBgLK09B06G0hcEfrmuvSj-F8WB8uQoEEBwiTSKEpDv1mzjnFzUCRQaafKdFdG1Y5VbzXTIfdPh4oCFM5J2G-DEILdOaoisGLPSPouLsKioX-RXK722X-cZvgHMQ1boYkpF7cLp1FgoXa5y0gdd98tOAcpHG-pjGjfZoHb0OzRuoUnIhIdYXOSOtu4itBzUkZpZ7H7QFz_ahfWXzl8DgDyytA4YfBHozk7-mLYwIy8e0r4NRW1DmSAVXv25hofJUrcQ9HNdqrf-sm7I"/>
+</div>
+</div>
+</header>
+<!-- Chat Area -->
+<main class="flex-1 overflow-y-auto p-6 space-y-6 relative">
+<!-- User Message -->
+<div class="flex justify-end">
+<div class="bg-primary text-white rounded-xl rounded-tr-none px-4 py-3 max-w-[80%] shadow-lg">
+<p class="text-sm font-medium">Quiero correr 10km hoy.</p>
+<span class="text-[10px] opacity-70 block text-right mt-1">08:14</span>
+</div>
+</div>
+<!-- Clinical Lock Warning -->
+<div class="relative z-10" id="clinical-lock">
+<div class="bg-clinical-red/10 border-2 border-clinical-red rounded-xl p-4 flex items-start gap-3 shadow-[0_0_20px_rgba(255,59,48,0.2)]">
+<span class="material-icons text-clinical-red">report_problem</span>
+<div>
+<span class="text-[11px] font-bold text-clinical-red tracking-widest block mb-1 uppercase">Protocolo de Seguridad</span>
+<p class="text-xs font-bold text-clinical-red leading-relaxed">
+                            [CLINICAL_LOCK_ACTIVE: Dolor persistente detectado &gt;3. Impacto prohibido]
+                        </p>
+</div>
+</div>
+</div>
+<!-- Coach Response -->
+<div class="flex justify-start">
+<div class="bg-surface-dark border border-primary/20 text-slate-100 rounded-xl rounded-tl-none px-4 py-3 max-w-[85%] shadow-md">
+<div class="flex items-center gap-2 mb-2">
+<span class="bg-primary p-1 rounded">
+<span class="material-icons text-[14px] text-white">psychology</span>
+</span>
+<span class="text-xs font-bold text-primary tracking-wide">BIOENGINE COACH</span>
+</div>
+<p class="text-sm leading-relaxed">
+                        Hola Gonzalo. Debido al bloqueo clínico por dolor de rodilla, hoy sustituiremos el running por natación o elíptica. 
+                        <br/><br/>
+<span class="font-bold text-primary">Prioridad: Recuperación.</span>
+</p>
+<span class="text-[10px] text-slate-500 block mt-2">08:15</span>
+</div>
+</div>
+<!-- Suggestion Chips -->
+<div class="flex flex-wrap gap-2 pt-2">
+<button class="text-[11px] bg-primary/20 text-primary border border-primary/30 rounded-full px-3 py-1.5 font-bold">Ver plan natación</button>
+<button class="text-[11px] bg-primary/20 text-primary border border-primary/30 rounded-full px-3 py-1.5 font-bold">Registrar dolor actual</button>
+</div>
+</main>
+<!-- Tutorial Overlay Layer -->
+<div class="absolute inset-0 z-40 pointer-events-none">
+<!-- Dimming effect -->
+<div class="absolute inset-0 bg-background-dark/40 backdrop-blur-[2px]"></div>
+<!-- Tooltip pointing to lock -->
+<div class="absolute top-[230px] left-6 right-6">
+<div class="relative bg-clinical-red text-white p-4 rounded-xl shadow-2xl pointer-events-auto">
+<!-- Triangle pointer -->
+<div class="absolute -top-2 left-10 w-4 h-4 bg-clinical-red transform rotate-45"></div>
+<div class="flex items-center gap-3">
+<span class="material-icons">info</span>
+<p class="text-xs font-bold leading-tight">
+                            El sistema bloquea automáticamente actividades de riesgo si detecta dolor agudo
+                        </p>
+</div>
+<button class="mt-3 w-full py-2 bg-white/20 rounded-lg text-[10px] uppercase tracking-widest font-black hover:bg-white/30 transition-colors">Entendido</button>
+</div>
+</div>
+</div>
+<!-- Footer Input -->
+<footer class="p-6 bg-background-dark border-t border-primary/10 ios-blur">
+<div class="relative flex items-center gap-3">
+<button class="w-10 h-10 flex items-center justify-center text-slate-400 bg-surface-dark rounded-full">
+<span class="material-icons">add</span>
+</button>
+<div class="relative flex-1">
+<input class="w-full bg-surface-dark border-none rounded-full py-3 px-6 text-sm placeholder:text-slate-500 focus:ring-1 focus:ring-primary text-white" placeholder="Escribe tu consulta..." type="text"/>
+<button class="absolute right-2 top-1.5 w-7 h-7 bg-primary rounded-full flex items-center justify-center">
+<span class="material-icons text-[16px] text-white">send</span>
+</button>
+</div>
+<button class="w-10 h-10 flex items-center justify-center text-slate-400 bg-surface-dark rounded-full">
+<span class="material-icons">mic</span>
+</button>
+</div>
+<!-- iOS Home Indicator -->
+<div class="mt-6 mx-auto w-32 h-1 bg-slate-700 rounded-full opacity-50"></div>
+</footer>
+</div>
+</body></html>

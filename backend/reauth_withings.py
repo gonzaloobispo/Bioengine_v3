@@ -21,8 +21,8 @@ def get_app_credentials():
 def save_tokens(tokens):
     conn = sqlite3.connect(DB_PATH)
     conn.execute(
-        "UPDATE secrets SET credentials_json = ?, updated_at = datetime('now') WHERE service = ?",
-        (json.dumps(tokens), 'withings_tokens')
+        "INSERT OR REPLACE INTO secrets (service, credentials_json, updated_at) VALUES (?, ?, datetime('now'))",
+        ('withings_tokens', json.dumps(tokens))
     )
     conn.commit()
     conn.close()
@@ -79,7 +79,7 @@ def main():
     )
     
     print(f"\n[1] Abriendo navegador para autorizar...")
-    print(f"    URL: {auth_url[:80]}...")
+    print(f"    URL: {auth_url}")
     
     # Iniciar servidor local para capturar el callback
     port = 8080

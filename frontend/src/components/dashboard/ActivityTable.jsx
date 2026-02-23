@@ -11,10 +11,12 @@ import {
     Flame,
     Heart,
     Zap,
-    TrendingUp
+    TrendingUp,
+    Trophy
 } from 'lucide-react';
+import TrainingZonesCard from './TrainingZonesCard';
 
-const ActivityTable = ({ activities, normalizeActivityType, calculatePace, getWeightForDate }) => {
+const ActivityTable = ({ activities, normalizeActivityType, calculatePace, getWeightForDate, hasAtenolol }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedRowId, setSelectedRowId] = useState(null);
     const itemsPerPage = 15;
@@ -57,18 +59,30 @@ const ActivityTable = ({ activities, normalizeActivityType, calculatePace, getWe
                                 </td>
                                 <td style={{ whiteSpace: 'nowrap' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <div className={`activity-icon-mini ${normalizeActivityType(act.tipo).toLowerCase().replace('/', '-')}`} style={{ minWidth: '14px' }}>
+                                        <div className={`activity-icon-mini ${normalizeActivityType(act).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[\s/]/g, '-')}`} style={{ minWidth: '14px', position: 'relative' }}>
                                             <Activity size={12} />
+                                            {act.evento_nombre && (
+                                                <div style={{ position: 'absolute', top: '-6px', right: '-6px', background: 'var(--accent-yellow)', borderRadius: '50%', width: '12px', height: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #000' }}>
+                                                    <Trophy size={8} color="#000" />
+                                                </div>
+                                            )}
                                         </div>
-                                        <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{normalizeActivityType(act.tipo)}</span>
-                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{act.nombre ? `- ${act.nombre}` : ''}</span>
+                                        <span style={{ fontWeight: 600, fontSize: '0.85rem', color: act.evento_nombre ? 'var(--accent-yellow)' : 'inherit' }}>
+                                            {normalizeActivityType(act)}
+                                        </span>
                                     </div>
                                 </td>
-                                <td style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{act.distancia_km?.toFixed(1) || '--'} km</td>
+                                <td style={{
+                                    fontWeight: 700,
+                                    whiteSpace: 'nowrap',
+                                    color: (!['Fuerza', 'Respiración'].includes(normalizeActivityType(act)) && (act.distancia_km || 0) <= 0) ? '#ff4b4b' : 'inherit'
+                                }}>
+                                    {['Fuerza', 'Respiración'].includes(normalizeActivityType(act)) ? '--' : (act.distancia_km?.toFixed(1) || '0.0') + ' km'}
+                                </td>
                                 <td style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{act.duracion_min?.toFixed(0)} min</td>
                                 <td style={{ whiteSpace: 'nowrap' }}>
                                     <span className="badge" style={{ padding: '2px 6px', fontSize: '0.75rem' }}>
-                                        {calculatePace(act.distancia_km, act.duracion_min) || `${(act.distancia_km / (act.duracion_min / 60)).toFixed(1)} km/h`}
+                                        {['Fuerza', 'Respiración'].includes(normalizeActivityType(act)) ? 'N/A' : (calculatePace(act.distancia_km, act.duracion_min) || `${(act.distancia_km / (act.duracion_min / 60)).toFixed(1)} km/h`)}
                                     </span>
                                 </td>
                                 <td style={{ color: 'var(--accent-blue)', fontWeight: 600, whiteSpace: 'nowrap' }}>
@@ -127,10 +141,34 @@ const ActivityTable = ({ activities, normalizeActivityType, calculatePace, getWe
                                                     </div>
                                                 </div>
                                                 <div className="detail-item">
-                                                    <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>Fuente de Datos</div>
-                                                    <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{act.fuente}</div>
+                                                    <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>Calzado</div>
+                                                    <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-green)' }}>{act.calzado || '--'}</div>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>Nombre / Evento</div>
+                                                    <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                                                        {act.evento_nombre ? <span style={{ color: 'var(--accent-yellow)' }}>🏆 {act.evento_nombre}</span> : (act.nombre || '--')}
+                                                    </div>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>Fuente</div>
+                                                    <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                                                        {act.fuente || '--'}
+                                                    </div>
                                                 </div>
                                             </div>
+
+                                            <TrainingZonesCard
+                                                zones={{
+                                                    hr_zone_1: act.hr_zone_1,
+                                                    hr_zone_2: act.hr_zone_2,
+                                                    hr_zone_3: act.hr_zone_3,
+                                                    hr_zone_4: act.hr_zone_4,
+                                                    hr_zone_5: act.hr_zone_5
+                                                }}
+                                                trainingEffectLabel={act.training_effect_label}
+                                                hasAtenolol={hasAtenolol}
+                                            />
                                         </motion.div>
                                     </td>
                                 </tr>
@@ -141,79 +179,81 @@ const ActivityTable = ({ activities, normalizeActivityType, calculatePace, getWe
             </table>
 
             {/* Pagination */}
-            {totalPages > 1 && (
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginTop: '2rem', flexWrap: 'wrap' }}>
-                    <button
-                        disabled={currentPage === 1}
-                        onClick={() => setCurrentPage(prev => prev - 1)}
-                        className="card"
-                        style={{ padding: '0.5rem', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', opacity: currentPage === 1 ? 0.5 : 1, display: 'flex', alignItems: 'center' }}
-                    >
-                        <ChevronLeft size={18} />
-                    </button>
+            {
+                totalPages > 1 && (
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginTop: '2rem', flexWrap: 'wrap' }}>
+                        <button
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(prev => prev - 1)}
+                            className="card"
+                            style={{ padding: '0.5rem', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', opacity: currentPage === 1 ? 0.5 : 1, display: 'flex', alignItems: 'center' }}
+                        >
+                            <ChevronLeft size={18} />
+                        </button>
 
-                    {(() => {
-                        const pages = [];
-                        const maxVisible = 5;
-                        let start = Math.max(1, currentPage - 2);
-                        let end = Math.min(totalPages, start + maxVisible - 1);
+                        {(() => {
+                            const pages = [];
+                            const maxVisible = 5;
+                            let start = Math.max(1, currentPage - 2);
+                            let end = Math.min(totalPages, start + maxVisible - 1);
 
-                        if (end - start < maxVisible - 1) {
-                            start = Math.max(1, end - maxVisible + 1);
-                        }
+                            if (end - start < maxVisible - 1) {
+                                start = Math.max(1, end - maxVisible + 1);
+                            }
 
-                        if (start > 1) {
-                            pages.push(
-                                <button key={1} onClick={() => setCurrentPage(1)} className={`page-btn ${currentPage === 1 ? 'active' : ''}`}>1</button>
-                            );
-                            if (start > 2) pages.push(<span key="dots1" style={{ color: 'var(--text-muted)' }}>...</span>);
-                        }
+                            if (start > 1) {
+                                pages.push(
+                                    <button key={1} onClick={() => setCurrentPage(1)} className={`page-btn ${currentPage === 1 ? 'active' : ''}`}>1</button>
+                                );
+                                if (start > 2) pages.push(<span key="dots1" style={{ color: 'var(--text-muted)' }}>...</span>);
+                            }
 
-                        for (let i = start; i <= end; i++) {
-                            pages.push(
-                                <button
-                                    key={i}
-                                    onClick={() => setCurrentPage(i)}
-                                    className={`page-btn ${currentPage === i ? 'active' : ''}`}
-                                    style={{
-                                        background: currentPage === i ? 'var(--accent-blue)' : 'rgba(255,255,255,0.05)',
-                                        color: currentPage === i ? '#000' : 'var(--text-main)',
-                                        border: 'none',
-                                        borderRadius: '8px',
-                                        padding: '0.5rem 0.8rem',
-                                        cursor: 'pointer',
-                                        fontWeight: 700,
-                                        fontSize: '0.8rem',
-                                        transition: 'all 0.2s ease'
-                                    }}
-                                >
-                                    {i}
-                                </button>
-                            );
-                        }
+                            for (let i = start; i <= end; i++) {
+                                pages.push(
+                                    <button
+                                        key={i}
+                                        onClick={() => setCurrentPage(i)}
+                                        className={`page-btn ${currentPage === i ? 'active' : ''}`}
+                                        style={{
+                                            background: currentPage === i ? 'var(--accent-blue)' : 'rgba(255,255,255,0.05)',
+                                            color: currentPage === i ? '#000' : 'var(--text-main)',
+                                            border: 'none',
+                                            borderRadius: '8px',
+                                            padding: '0.5rem 0.8rem',
+                                            cursor: 'pointer',
+                                            fontWeight: 700,
+                                            fontSize: '0.8rem',
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                    >
+                                        {i}
+                                    </button>
+                                );
+                            }
 
-                        if (end < totalPages) {
-                            if (end < totalPages - 1) pages.push(<span key="dots2" style={{ color: 'var(--text-muted)' }}>...</span>);
-                            pages.push(
-                                <button key={totalPages} onClick={() => setCurrentPage(totalPages)} className={`page-btn ${currentPage === totalPages ? 'active' : ''}`}>
-                                    {totalPages}
-                                </button>
-                            );
-                        }
-                        return pages;
-                    })()}
+                            if (end < totalPages) {
+                                if (end < totalPages - 1) pages.push(<span key="dots2" style={{ color: 'var(--text-muted)' }}>...</span>);
+                                pages.push(
+                                    <button key={totalPages} onClick={() => setCurrentPage(totalPages)} className={`page-btn ${currentPage === totalPages ? 'active' : ''}`}>
+                                        {totalPages}
+                                    </button>
+                                );
+                            }
+                            return pages;
+                        })()}
 
-                    <button
-                        disabled={currentPage === totalPages}
-                        onClick={() => setCurrentPage(prev => prev + 1)}
-                        className="card"
-                        style={{ padding: '0.5rem', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', opacity: currentPage === totalPages ? 0.5 : 1, display: 'flex', alignItems: 'center' }}
-                    >
-                        <ChevronRight size={18} />
-                    </button>
-                </div>
-            )}
-        </div>
+                        <button
+                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage(prev => prev + 1)}
+                            className="card"
+                            style={{ padding: '0.5rem', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', opacity: currentPage === totalPages ? 0.5 : 1, display: 'flex', alignItems: 'center' }}
+                        >
+                            <ChevronRight size={18} />
+                        </button>
+                    </div>
+                )
+            }
+        </div >
     );
 };
 

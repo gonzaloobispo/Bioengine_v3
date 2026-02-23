@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#7f13ec",
+                        "background-light": "#f7f6f8",
+                        "background-dark": "#191022",
+                        "warning-red": "#ff4b4b",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Space Grotesk', sans-serif; }
+        .ios-blur { backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-100 min-h-screen font-display">
+<!-- iOS Status Bar Placeholder -->
+<div class="h-12 w-full flex items-center justify-between px-8 pt-4 sticky top-0 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md z-50">
+<span class="text-sm font-semibold">9:41</span>
+<div class="flex items-center space-x-2">
+<span class="material-icons-round text-sm">signal_cellular_alt</span>
+<span class="material-icons-round text-sm">wifi</span>
+<span class="material-icons-round text-sm">battery_full</span>
+</div>
+</div>
+<!-- Main Header -->
+<header class="px-6 pt-6 pb-2">
+<div class="flex items-center justify-between mb-2">
+<span class="text-xs font-bold uppercase tracking-widest text-primary">BioEngine V4</span>
+<span class="material-icons-round text-slate-400">more_horiz</span>
+</div>
+<h1 class="text-2xl font-bold">Plan Semanal Master 49+</h1>
+<p class="text-sm text-slate-500 dark:text-slate-400">Ciclo de Preparación - Semana 12</p>
+</header>
+<!-- Calendar View -->
+<main class="px-6 py-4 space-y-4 pb-32 relative">
+<!-- Day Cards Container -->
+<div class="flex flex-col gap-4">
+<!-- Monday: Rest -->
+<div class="bg-white/5 dark:bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-between opacity-60">
+<div class="flex items-center space-x-4">
+<div class="w-12 h-12 rounded-lg bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
+<span class="text-sm font-bold">LUN</span>
+</div>
+<div>
+<h3 class="font-medium text-slate-400">Descanso Total</h3>
+<p class="text-xs text-slate-500">Recuperación pasiva</p>
+</div>
+</div>
+<span class="material-icons-round text-slate-600">bedtime</span>
+</div>
+<!-- Tuesday: Run -->
+<div class="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 p-4 rounded-xl flex items-center justify-between">
+<div class="flex items-center space-x-4">
+<div class="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center">
+<span class="text-sm font-bold text-primary">MAR</span>
+</div>
+<div>
+<h3 class="font-medium">Carrera - Z2</h3>
+<p class="text-xs text-slate-400">45 min @ 135-142 bpm</p>
+</div>
+</div>
+<span class="material-icons-round text-primary">directions_run</span>
+</div>
+<!-- Wednesday: Strength -->
+<div class="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 p-4 rounded-xl flex items-center justify-between">
+<div class="flex items-center space-x-4">
+<div class="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center">
+<span class="text-sm font-bold text-primary">MIÉ</span>
+</div>
+<div>
+<h3 class="font-medium">Fuerza Funcional</h3>
+<p class="text-xs text-slate-400">Core y Estabilidad Master</p>
+</div>
+</div>
+<span class="material-icons-round text-primary">fitness_center</span>
+</div>
+<!-- Thursday: CLINICAL LOCK -->
+<div class="relative">
+<div class="bg-slate-900/60 border-2 border-warning-red p-4 rounded-xl flex items-center justify-between ring-4 ring-warning-red/10 animate-pulse-subtle">
+<div class="flex items-center space-x-4">
+<div class="w-12 h-12 rounded-lg bg-warning-red/20 flex items-center justify-center">
+<span class="text-sm font-bold text-warning-red">JUE</span>
+</div>
+<div>
+<div class="flex items-center space-x-2">
+<h3 class="font-bold text-warning-red">Bloqueo Clínico</h3>
+<span class="material-icons-round text-sm text-warning-red">lock</span>
+</div>
+<p class="text-xs text-slate-400">Dolor Reportado &gt; 3/10</p>
+</div>
+</div>
+<span class="material-icons-round text-warning-red">warning</span>
+</div>
+<!-- Hard Stop Popup Overlay -->
+<div class="absolute -top-12 left-1/2 -translate-x-1/2 w-72 bg-warning-red p-3 rounded-lg shadow-2xl z-20">
+<div class="flex items-start space-x-2">
+<span class="material-icons-round text-white text-sm">security</span>
+<div>
+<p class="text-xs font-bold text-white uppercase">Hard-Stop Active</p>
+<p class="text-[11px] text-white/90">Intervalos reemplazados por Elíptica (Bajo Impacto)</p>
+</div>
+</div>
+<!-- Triangle pointer -->
+<div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-warning-red rotate-45"></div>
+</div>
+</div>
+<!-- Friday: Swim -->
+<div class="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 p-4 rounded-xl flex items-center justify-between">
+<div class="flex items-center space-x-4">
+<div class="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center">
+<span class="text-sm font-bold text-primary">VIE</span>
+</div>
+<div>
+<h3 class="font-medium">Natación</h3>
+<p class="text-xs text-slate-400">1.500m Técnica Mixta</p>
+</div>
+</div>
+<span class="material-icons-round text-primary">pool</span>
+</div>
+<!-- Saturday: Long Run -->
+<div class="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 p-4 rounded-xl flex items-center justify-between">
+<div class="flex items-center space-x-4">
+<div class="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center">
+<span class="text-sm font-bold text-primary">SÁB</span>
+</div>
+<div>
+<h3 class="font-medium">Carrera Larga</h3>
+<p class="text-xs text-slate-400">90 min Progresivo</p>
+</div>
+</div>
+<span class="material-icons-round text-primary">event_note</span>
+</div>
+<!-- Sunday: Rest -->
+<div class="bg-white/5 dark:bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-between opacity-60">
+<div class="flex items-center space-x-4">
+<div class="w-12 h-12 rounded-lg bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
+<span class="text-sm font-bold">DOM</span>
+</div>
+<div>
+<h3 class="font-medium text-slate-400">Descanso Total</h3>
+<p class="text-xs text-slate-500">Recuperación activa / Caminata</p>
+</div>
+</div>
+<span class="material-icons-round text-slate-600">spa</span>
+</div>
+</div>
+</main>
+<!-- Bottom Action Area -->
+<footer class="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-background-light dark:from-background-dark via-background-light dark:via-background-dark to-transparent pt-10">
+<button class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/25 flex items-center justify-center space-x-2 active:scale-[0.98] transition-transform">
+<span class="material-icons-round">edit_note</span>
+<span>VERIFICAR DOLOR</span>
+</button>
+<!-- iOS Home Indicator -->
+<div class="h-1.5 w-32 bg-slate-300 dark:bg-slate-700 mx-auto mt-6 rounded-full opacity-50"></div>
+</footer>
+<!-- Stats Visualization Background (Decorative) -->
+<div class="fixed top-0 right-0 -z-10 opacity-20 pointer-events-none">
+<div class="w-96 h-96 bg-primary/30 rounded-full blur-[100px] -mr-48 -mt-24"></div>
+</div>
+<div class="fixed bottom-0 left-0 -z-10 opacity-10 pointer-events-none">
+<div class="w-80 h-80 bg-warning-red/40 rounded-full blur-[80px] -ml-40 -mb-20"></div>
+</div>
+</body></html>

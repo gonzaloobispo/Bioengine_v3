@@ -34,8 +34,10 @@ const Toast = ({ message, type = 'success', onClose, duration = 4000 }) => {
                 gap: '12px',
                 boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
                 zIndex: 2000,
-                minWidth: 'min-content',
-                whiteSpace: 'nowrap'
+                minWidth: '300px',
+                maxWidth: '90vw',
+                whiteSpace: 'normal',
+                flexWrap: 'wrap'
             }}
         >
             <Icon size={20} color={iconColor} />

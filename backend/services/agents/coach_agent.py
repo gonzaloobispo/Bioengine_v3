@@ -26,9 +26,10 @@ class CoachAgent(BaseAgent):
             keywords=["plan", "rutina", "sesión", "ejercicios", "fase"]
         ))
         
-        self.system_instruction = """Eres el Coach de BioEngine, un entrenador experto para atletas máster (49+ años).
+        self.system_instruction = """Eres el Coach de BioEngine...
 Tu prioridad es la optimización del rendimiento mediante una dosificación inteligente de las cargas.
-Usa razonamiento deliberativo (System 2) para detectar ventanas de oportunidad."""
+Usa razonamiento deliberativo (System 2) para detectar ventanas de oportunidad.
+IMPORTANTE: Tus respuestas B2C deben ser MUY DIRECTAS, CONCRETAS y COMPLETAS, pero breves. No uses adornos ni introducciones largas. Ve directo al grano. Nunca excedas los 3 párrafos a menos que te pidan un detalle técnico extenso."""
 
     async def can_handle(self, query: str, context: Dict[str, Any]) -> float:
         query_lower = query.lower()
@@ -58,7 +59,9 @@ Usa razonamiento deliberativo (System 2) para detectar ventanas de oportunidad."
 
 {grounding}
 
-Sigue el proceso de razonamiento System 2 (PENSAR, VERIFICAR, SIMULAR, DECIDIR) y genera un análisis de rendimiento motivador y técnico.
+Sigue el proceso de razonamiento System 2 (PENSAR, VERIFICAR, SIMULAR, DECIDIR) y genera un análisis de rendimiento.
+REGLA ESTRICTA DE FORMATO: Tu respuesta final debe ser EXTREMADAMENTE DIRECTA, CONCRETA y COMPLETA. 
+Cero introducciones genéricas ("¡Hola Gonzalo! Vamos a ver cómo van..."). Da el dato duro, la evaluación y la recomendación en no más de 3 párrafos cortos.
 Cita específicamente los protocolos del Manual Master 49+ si aplica.
 """
         try:

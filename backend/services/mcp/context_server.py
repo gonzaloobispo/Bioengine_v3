@@ -9,6 +9,16 @@ from config import CONTEXT_BASE_PATH
 # Inicializar FastMCP para el contexto de conocimiento (Markdown)
 mcp = FastMCP("BioEngine Knowledge Hub")
 
+@mcp.resource("context://rehab_protocols")
+def get_rehab_protocols() -> str:
+    """Obtiene los protocolos específicos de rehabilitación de rodilla."""
+    try:
+        path = CONTEXT_BASE_PATH / "rehab_protocols.md"
+        with open(path, "r", encoding="utf-8") as f:
+            return f.read()
+    except Exception as e:
+        return f"Error leyendo protocolos de rehab: {str(e)}"
+
 @mcp.resource("context://training_plan")
 def get_training_plan() -> str:
     """Obtiene el plan de entrenamiento específico (Tenis Master 49+)."""

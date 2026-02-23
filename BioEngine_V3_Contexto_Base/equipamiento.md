@@ -8,16 +8,18 @@ Este documento centraliza todo el material deportivo y médico disponible para e
 * **Zapatillas Principales**: `ASICS Kayano 31`
   * *Tipo*: Estabilidad (Soporte Pronación)
   * *Uso*: Rodajes largos, series en asfalto.
-  * *Kilometraje*: ~574 km (según Garmin Connect)
+  * *Kilometraje*: ~11.77 km (Calibrado 08/02/2026)
 * **Zapatillas Rotación/Reserva**: `Brooks Adrenaline GTS 23`
   * *Tipo*: Estabilidad.
   * *Uso*: Rodajes suaves o regenerativos.
+  * *Kilometraje*: ~418.49 km (Calibrado 08/02/2026)
 * **Monitorización**: `Garmin Forerunner 965` (GPS, Pulso, Potencia, Métricas Avanzadas)
 
 ## ⛰️ Trail Running / Trekking
 * **Zapatillas Técnicas**: `Hoka Speedgoat 6`
   * *Tipo*: Máxima amortiguación y agarre.
   * *Uso*: Terreno irregular técnico, tiradas largas.
+  * *Kilometraje*: ~29.39 km (Calibrado 08/02/2026)
 * **Zapatillas Mixtas**: `New Balance Garoe`
   * *Tipo*: All Terrain.
   * *Uso*: Senderos fáciles, caminos de tierra compacta.
@@ -26,8 +28,8 @@ Este documento centraliza todo el material deportivo y médico disponible para e
 * **Bicicleta**: `Trek FX Sport AL 3`
   * *Tipo*: Fitness / Híbrida.
   * *Configuración*: Equipada con sensores externos. Casete de 10 velocidades.
-  * *Kilometraje Total*: ~2,510 km (según Garmin Connect)
-  * *Uso Reciente*: ~60 km
+  * *Kilometraje Total*: ~59.58 km (Calibrado 08/02/2026)
+  * *Uso Reciente*: ~0 km
 * **Sensores**:
   * Sensor de Velocidad Garmin (Buje).
   * Sensor de Cadencia Garmin (Biela).
@@ -37,7 +39,7 @@ Este documento centraliza todo el material deportivo y médico disponible para e
 * **Zapatillas**: `Babolat Fury 3`
   * *Tipo*: Court (Soporte lateral reforzado).
   * *Uso*: Partidos y entrenamientos en cancha.
-  * *Sesiones Registradas*: ~74 (según Garmin Connect)
+  * *Kilometraje*: ~61.19 km (Calibrado 08/02/2026)
 
 ## 🎒 Accesorios & Indumentaria
 * **Hidratación**: Chaleco `Aonijie` (Para salidas > 60 min).
@@ -47,8 +49,13 @@ Este documento centraliza todo el material deportivo y médico disponible para e
 * **Ropa**: Remera técnica (Gestión de humedad), Sombrero Adidas (Protección UV).
 
 ## 🏋️‍♂️ Fuerza & Rehabilitación
-* **Mancuernas**: Par de 5kg.
-  * *Uso*: Rehabilitación epicondilitis, fuerza isométrica tren superior/inferior.
+* **Mancuernas Ajustables / Barra**: 2 Juegos de 20kg (Total 40kg).
+  * *Composición (Por juego)*: 4 discos de 2kg, 4 de 1.5kg, 4 de 1.25kg, y 1 mancuerna de 1kg.
+  * *Capacidad Modular*: Las mancuernas se pueden unir con una barra central. Se pueden agrupar los discos de ambos juegos (ej. colar los 8 discos de 2kg en la barra unida) para lograr levantamientos pesados de hasta casi 40kg en ejercicios como Peso Muerto Rumano (RDL) o Sentadillas.
+* **Mancuernas Fijas**: Par de 5kg (2x 5kg).
+  * *Uso*: Rehabilitación epicondilitis, movilidad y calentamiento.
+* **Pesas de Tobillo**: Par de 2kg (2x 2kg).
+  * *Uso*: Fortalecimiento aislado tren inferior, isometría y recuperación de rodilla.
 * **Sugeridos**: Colchoneta (para trabajo de Core y movilidad).
 
 ## 🩺 Médico / Ortopedia

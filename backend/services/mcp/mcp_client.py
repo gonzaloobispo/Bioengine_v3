@@ -1,6 +1,7 @@
 import asyncio
 from typing import Dict, Any, List, Optional
 import json
+import time
 
 # Importar los servidores locales (instancias de FastMCP)
 from .training_db_server import mcp as db_mcp
@@ -19,6 +20,9 @@ class MCPClient:
             "context": context_mcp,
             "biometrics": bio_mcp
         }
+        self._context_cache = None
+        self._last_cache_time = 0
+        self._cache_ttl = 300 # 5 minutos
 
     async def read_resource(self, uri: str) -> str:
         """Lee un recurso de un servidor MCP basado en su URI."""
@@ -62,11 +66,40 @@ class MCPClient:
         except Exception as e:
             raise ValueError(f"Error llamando a herramienta {tool_name}: {str(e)}")
 
-    async def get_full_coach_context(self) -> Dict[str, Any]:
-        """Agrega contexto de múltiples servidores MCP para el Coach."""
+    async def get_static_manuals(self) -> str:
+        """Retrieves and concatenates heavy static manuals for caching."""
+        uris = [
+            ("Manual de Fisioterapia", "context://manual_fisioterapia"),
+            ("Protocolos de Rehabilitación", "context://rehab_protocols"),
+            ("Manual Master 49+", "context://manual_master_49")
+        ]
+        
+        tasks = []
+        for _, uri in uris:
+            tasks.append(self.read_resource(uri))
+            
+        responses = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        combined_text = ""
+        for (title, _), response in zip(uris, responses):
+            combined_text += f"\n\n--- {title} ---\n\n"
+            if isinstance(response, Exception):
+                combined_text += f"Error cargando manual: {str(response)}"
+            else:
+                combined_text += response
+                
+        return combined_text
+
+    async def get_full_coach_context(self, include_static: bool = True) -> Dict[str, Any]:
+        """Agrega contexto de múltiples servidores MCP para el Coach con cache TTL."""
+        # Verificar cache (sólo si incluimos static para compatibilidad, o cacheamos todo?)
+        # Para ser seguros, no usamos esta cache en memoria si pedimos include_static=False
+        now = time.time()
+        if include_static and self._context_cache and (now - self._last_cache_time < self._cache_ttl):
+            return self._context_cache
+
         uris = [
             ("training_plan", "context://training_plan"),
-            ("manual_fisioterapia", "context://manual_fisioterapia"),
             ("activities", "db://activities/recent"),
             ("pain_history", "db://pain/history"),
             ("user_context", "db://user/context"),
@@ -74,10 +107,16 @@ class MCPClient:
             ("heart_rate", "biometrics://heart_rate/latest"),
             ("glucose", "biometrics://glucose/latest"),
             ("hrv_trend", "biometrics://hrv/trend"),
-            ("manual_master_49", "context://manual_master_49"),
             ("bioconnect_spec", "context://bioconnect_spec"),
             ("equipment", "context://equipamiento")
         ]
+        
+        if include_static:
+            uris.extend([
+                ("manual_fisioterapia", "context://manual_fisioterapia"),
+                ("rehab_protocols", "context://rehab_protocols"),
+                ("manual_master_49", "context://manual_master_49")
+            ])
         
         results = {}
         tasks = []
@@ -95,4 +134,9 @@ class MCPClient:
             else:
                 results[key] = response
                 
+        # Actualizar cache local solo si trajimos todo
+        if include_static:
+            self._context_cache = results
+            self._last_cache_time = now
+        
         return results

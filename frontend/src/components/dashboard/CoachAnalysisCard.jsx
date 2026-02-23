@@ -3,7 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Brain, ChevronUp, ChevronDown, Clock } from 'lucide-react';
 
 const CoachAnalysisCard = ({ analysis, isLoading }) => {
-    const [expanded, setExpanded] = useState(true);
+    const [expanded, setExpanded] = useState(!!analysis && !isLoading);
+
+    useEffect(() => {
+        if (!isLoading && analysis) {
+            setExpanded(true);
+        }
+    }, [isLoading, analysis]);
     const [countdown, setCountdown] = useState(45);
 
     useEffect(() => {

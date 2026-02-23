@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Activity,
   Scale,
@@ -25,7 +25,7 @@ import Sidebar from './components/layout/Sidebar';
 import CoachAnalysisCard from './components/dashboard/CoachAnalysisCard';
 import KPIOverview from './components/dashboard/KPIOverview';
 import ActivityTable from './components/dashboard/ActivityTable';
-import BiometricsView from './components/dashboard/BiometricsView';
+import MetricsView from './components/dashboard/MetricsView';
 import EquiposView from './components/dashboard/EquiposView';
 import MemoryView from './components/dashboard/MemoryView';
 import ChatSidebar from './components/dashboard/ChatSidebar';
@@ -35,6 +35,14 @@ import PlansView from './components/dashboard/PlansView';
 import PainTracker from './components/dashboard/PainTracker';
 import ArticularHealthKPIs from './components/dashboard/ArticularHealthKPIs';
 import HITLPanel from './components/dashboard/HITLPanel';
+import TrainingIntelligence from './components/dashboard/TrainingIntelligence';
+import TrainingTrends from './components/dashboard/TrainingTrends';
+import SmartAlertsPanel from './components/dashboard/SmartAlertsPanel';
+import ProfileView from './components/dashboard/ProfileView';
+import SettingsView from './components/dashboard/SettingsView';
+import KnowledgeLibrary from './components/dashboard/KnowledgeLibrary';
+import NutritionView from './components/dashboard/NutritionView';
+import AnalyzerView from './components/dashboard/AnalyzerView';
 import Toast from './components/Toast';
 
 const calculatePace = (dist, dur) => {
@@ -69,10 +77,14 @@ function App() {
     metricFilter,
     setMetricFilter,
     availableTypes,
-    normalizeActivityType
+    normalizeActivityType,
+    trends,
+    nutrition,
+    profile
   } = useBioEngineData();
 
   const [activeView, setActiveView] = useState('overview');
+  const [librarySearch, setLibrarySearch] = useState('');
   const [chatOpen, setChatOpen] = useState(true);
   const [inputMessage, setInputMessage] = useState('');
   const [memoryToken, setMemoryToken] = useState('');
@@ -83,14 +95,29 @@ function App() {
   const showToast = (message, type = 'success') => setToast({ message, type });
   const closeToast = () => setToast(null);
 
+  // Global plans state (shared between CalendarView and PlansView)
+  const [globalPlans, setGlobalPlans] = useState([]);
+  useEffect(() => {
+    fetch('http://localhost:8001/plans')
+      .then(r => r.json())
+      .then(data => setGlobalPlans(data))
+      .catch(() => { });
+  }, []);
+
   const handleRunSync = async () => {
     try {
       const result = await handleSync();
-      const newGarmin = result.garmin.added || 0;
-      const newWithings = result.withings.added || 0;
-      showToast(`Sincronización: +${newGarmin} Garmin, +${newWithings} Withings`);
+
+      const garminMsg = result.garmin?.status === 'success' ? `✅ Garmin (+${result.garmin.added})` : `❌ Garmin (${result.garmin?.message || 'Error'})`;
+      const withingsMsg = result.withings?.status === 'success' ? `✅ Withings (+${result.withings.added})` : `❌ Withings (${result.withings?.message || 'Error'})`;
+
+      const type = (result.garmin?.status === 'success' && result.withings?.status === 'success') ? 'success' : 'error';
+
+      showToast(`${garminMsg}  |  ${withingsMsg}`, type);
+
     } catch (error) {
-      showToast("Error crítico al sincronizar", "error");
+      console.error(error);
+      showToast("Error crítico de comunicación", "error");
     }
   };
 
@@ -130,7 +157,7 @@ function App() {
   const pieData = useMemo(() => {
     if (!filteredActivities.length) return [];
     const counts = filteredActivities.reduce((acc, curr) => {
-      const tipo = normalizeActivityType(curr.tipo);
+      const tipo = normalizeActivityType(curr);
       acc[tipo] = (acc[tipo] || 0) + 1;
       return acc;
     }, {});
@@ -159,7 +186,30 @@ function App() {
           <>
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h2 style={{ fontSize: '2rem', fontFamily: 'Outfit' }}>Dashboard General</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <h2 style={{ fontSize: '2rem', fontFamily: 'Outfit' }}>Dashboard General</h2>
+                  {profile?.medicaciones?.some(m => m.toLowerCase().includes('atenolol')) && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      style={{
+                        padding: '4px 12px',
+                        background: 'rgba(0, 180, 255, 0.15)',
+                        borderRadius: '20px',
+                        border: '1px solid var(--accent-blue)',
+                        color: 'var(--accent-blue)',
+                        fontSize: '0.75rem',
+                        fontWeight: 800,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        letterSpacing: '0.5px'
+                      }}
+                    >
+                      <Shield size={12} fill="var(--accent-blue)" color="black" /> Modo Atenolol Activo
+                    </motion.div>
+                  )}
+                </div>
                 <p style={{ color: 'var(--text-muted)' }}>Resumen de salud biomecánica e integridad física.</p>
               </div>
               <button
@@ -187,15 +237,33 @@ function App() {
               </button>
             </header>
 
-            <CoachAnalysisCard analysis={coachAnalysis} isLoading={isAnalysisLoading} />
+            {(coachAnalysis || isAnalysisLoading) && (
+              <CoachAnalysisCard analysis={coachAnalysis} isLoading={isAnalysisLoading} />
+            )}
+            <SmartAlertsPanel />
             <ArticularHealthKPIs
               acwr={kpis.acwr}
+              acwrRoad={kpis.acwrRoad}
+              acwrTrail={kpis.acwrTrail}
+              acwrBike={kpis.acwrBike}
               acwrStatus={kpis.acwrStatus}
               acwrColor={kpis.acwrColor}
               lastWeight={kpis.lastWeight}
+              kneeSuggestion={kpis.kneeSuggestion}
+              sleepHours={kpis.sleepHours}
+              hrvValue={kpis.hrvValue}
+              readinessScore={kpis.readinessScore}
+              bodyBattery={kpis.bodyBattery}
+              restingHR={kpis.restingHR}
+              stressLevel={kpis.stressLevel}
+              spo2Avg={kpis.spo2Avg}
+              respirationAvg={kpis.respirationAvg}
+              floorsAscended={kpis.floorsAscended}
             />
             <PainTracker />
             <HITLPanel showToast={showToast} />
+            <TrainingIntelligence />
+            <TrainingTrends />
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))', gap: '2rem', marginTop: '2rem' }}>
               <div className="card" style={{ height: '400px' }}>
@@ -208,7 +276,7 @@ function App() {
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                     <XAxis dataKey="fecha" stroke="var(--text-muted)" fontSize={10} tickFormatter={(val) => val?.split('T')[0]?.split('-').slice(1).reverse().join('/') || ''} />
                     <YAxis stroke="var(--text-muted)" fontSize={10} domain={['dataMin - 1', 'dataMax + 1']} />
-                    <Tooltip contentStyle={{ background: '#1a1f35', border: '1px solid var(--border)' }} />
+                    <Tooltip contentStyle={{ background: '#1a1f35', border: '1px solid var(--border)' }} itemStyle={{ color: '#fff' }} />
                     <Area type="monotone" dataKey="peso" stroke="var(--accent-green)" fill="var(--accent-green)" fillOpacity={0.1} strokeWidth={2} />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -223,10 +291,10 @@ function App() {
                   <PieChart>
                     <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="value">
                       {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={['#00D2FF', '#00FFAA', '#A855F7', '#F59E0B'][index % 4]} />
+                        <Cell key={`cell-${index}`} fill={['#00D2FF', '#00FFAA', '#A855F7', '#F59E0B', '#EF4444', '#EC4899', '#10B981'][index % 7]} />
                       ))}
                     </Pie>
-                    <Tooltip contentStyle={{ background: '#1a1f35' }} />
+                    <Tooltip contentStyle={{ background: '#1a1f35', border: '1px solid var(--border)' }} itemStyle={{ color: '#fff' }} />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
@@ -235,17 +303,19 @@ function App() {
           </>
         )}
 
-        {activeView === 'metricas' && (
-          <>
-            <header style={{ marginBottom: '2rem' }}>
-              <h2 style={{ fontSize: '2rem', fontFamily: 'Outfit' }}>KPIs & Peso</h2>
-            </header>
-            <KPIOverview
-              {...kpis}
-              dateFilter={dateFilter}
-              typeFilter={typeFilter}
-            />
-          </>
+        {activeView === 'metrics' && (
+          <MetricsView
+            kpis={kpis}
+            activitiesCount={filteredActivities.length}
+            dateFilter={dateFilter}
+            typeFilter={typeFilter}
+            lastWeight={kpis.lastWeight}
+            lastWeightDate={kpis.lastWeightDate}
+            totalKm={kpis.totalKm}
+            totalHours={kpis.totalHours}
+            biometrics={biometrics}
+            trends={trends}
+          />
         )}
 
         {activeView === 'actividades' && (
@@ -300,7 +370,9 @@ function App() {
                     }}
                   >
                     <option value="all" style={{ background: '#1a1f35', color: 'white' }}>Todos los deportes</option>
-                    <option value="Competición Calle" style={{ background: '#1a1f35', color: 'var(--accent-green)' }}>🏆 Competencias</option>
+                    <option value="Competición" style={{ background: '#1a1f35', color: 'var(--accent-yellow)' }}>🏆 Todas las Competencias</option>
+                    <option value="Competición Calle" style={{ background: '#1a1f35', color: 'var(--accent-blue)' }}>🏙️ Carreras de Calle</option>
+                    <option value="Competición Trail" style={{ background: '#1a1f35', color: 'var(--accent-green)' }}>⛰️ Carreras de Trail</option>
                     {availableTypes.map(type => (
                       type !== 'Competición Calle' && <option key={type} value={type} style={{ background: '#1a1f35', color: 'white' }}>{type}</option>
                     ))}
@@ -348,21 +420,30 @@ function App() {
                 normalizeActivityType={normalizeActivityType}
                 calculatePace={calculatePace}
                 getWeightForDate={getWeightForDate}
+                hasAtenolol={profile?.medicaciones?.some(m => m.toLowerCase().includes('atenolol'))}
               />
             </div>
           </div>
         )}
 
-        {activeView === 'biometria' && <BiometricsView biometrics={biometrics} />}
 
         {activeView === 'calendario' && (
           <CalendarView
             activities={filteredActivities}
             normalizeActivityType={normalizeActivityType}
+            plans={globalPlans}
           />
         )}
 
-        {activeView === 'planes' && <PlansView />}
+        {activeView === 'planes' && (
+          <PlansView
+            activities={filteredActivities}
+            onViewExercise={(name) => {
+              setLibrarySearch(name);
+              setActiveView('biblioteca');
+            }}
+          />
+        )}
 
         {activeView === 'equipos' && <EquiposView equipment={equipment} equipmentStats={equipmentStats} />}
 
@@ -377,7 +458,27 @@ function App() {
           />
         )}
 
+        {activeView === 'biblioteca' && (
+          <KnowledgeLibrary
+            initialSearch={librarySearch}
+            onClearSearch={() => setLibrarySearch('')}
+          />
+        )}
+        {activeView === 'nutricion' && (
+          <NutritionView
+            nutrition={nutrition}
+            biometrics={biometrics}
+            weight={kpis.lastWeight}
+            showToast={showToast}
+          />
+        )}
+
+        {activeView === 'analyzer' && <AnalyzerView />}
+
         {activeView === 'sistema' && <SystemDashboard />}
+
+        {activeView === 'perfil' && <ProfileView showToast={showToast} />}
+        {activeView === 'ajustes' && <SettingsView showToast={showToast} />}
       </main>
 
       <ChatSidebar

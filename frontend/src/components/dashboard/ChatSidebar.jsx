@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
+import { API_BASE } from '../../config';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Brain } from 'lucide-react';
 
@@ -11,11 +12,22 @@ const ChatSidebar = ({
     handleSendMessage
 }) => {
     const [modelInfo, setModelInfo] = React.useState({ description: 'Cargando...' });
+    const messagesEndRef = useRef(null);
+
+    // Auto-scroll to bottom whenever messages change (new content streaming in)
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            if (messagesEndRef.current) {
+                messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }
+        }, 50);
+        return () => clearTimeout(timeoutId);
+    }, [JSON.stringify(messages)]);
 
     React.useEffect(() => {
         const fetchStatus = async () => {
             try {
-                const res = await fetch('http://localhost:8000/chat/status');
+                const res = await fetch(`${API_BASE}/chat/status`);
                 const data = await res.json();
                 setModelInfo(data);
             } catch (e) {
@@ -24,10 +36,17 @@ const ChatSidebar = ({
         };
         if (chatOpen) {
             fetchStatus();
-            const interval = setInterval(fetchStatus, 30000); // Actualizar cada 30s
+            const interval = setInterval(fetchStatus, 30000);
             return () => clearInterval(interval);
         }
-    }, [chatOpen, messages.length]); // Re-fetch when sending messages too
+    }, [chatOpen, messages.length]);
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
+        }
+    };
 
     return (
         <>
@@ -59,13 +78,21 @@ const ChatSidebar = ({
                             </button>
                         </div>
 
+                        {/* Scrollable messages area */}
                         <div className="chat-messages">
                             {messages.map((msg, idx) => (
                                 <div key={idx} className={`message message-${msg.role}`}>
-                                    {msg.text}
+                                    {/* Render newlines as line breaks */}
+                                    {msg.text.split('\n').map((line, i) => (
+                                        <React.Fragment key={i}>
+                                            {line}
+                                            {i < msg.text.split('\n').length - 1 && <br />}
+                                        </React.Fragment>
+                                    ))}
                                 </div>
                             ))}
-                            <div style={{ height: '20px' }}></div>
+                            {/* Anchor element — always scrolled into view */}
+                            <div ref={messagesEndRef} style={{ height: '1px' }} />
                         </div>
 
                         <div className="chat-input-container">
@@ -73,7 +100,7 @@ const ChatSidebar = ({
                                 type="text"
                                 value={inputMessage}
                                 onChange={(e) => setInputMessage(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                                onKeyDown={handleKeyDown}
                                 placeholder="Pregunta a tu coach..."
                                 className="chat-input"
                             />

@@ -6,6 +6,8 @@ import sqlite3
 from typing import Optional, Dict, Any, List
 from config import CONTEXT_BASE_PATH, DB_PATH
 
+from datetime import date as py_date
+
 logger = logging.getLogger(__name__)
 
 class ContextManager:
@@ -13,6 +15,46 @@ class ContextManager:
     Gestor del 'Cerebro' de BioEngine. 
     Maneja la carga de conocimiento base (Markdown) y la memoria evolutiva (SQLite).
     """
+    @staticmethod
+    def calculate_age(birth_date_str: str) -> int:
+        if not birth_date_str:
+            return 49 # Fallback
+        try:
+            # Soportar ISO completa o solo fecha
+            birth_date = py_date.fromisoformat(birth_date_str.split('T')[0])
+            today = py_date.today()
+            age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+            return age
+        except Exception:
+            return 49
+
+    @staticmethod
+    def calculate_mhr_and_zones(age: int, medications: List[str] = None) -> Dict[str, Any]:
+        """Calcula FC Máxima y zonas de entrenamiento adaptadas a medicación."""
+        has_atenolol = False
+        if medications:
+            has_atenolol = any("atenolol" in m.lower() for m in medications)
+        
+        if has_atenolol:
+            # Fórmula de Brawner para pacientes con betabloqueantes
+            mhr = int(164 - (0.7 * age))
+            zones_type = "Brawner (Adjusted for Beta-blockers)"
+        else:
+            # Fórmula de Tanaka es más precisa para masters: 208 - (0.7 * edad)
+            mhr = int(208 - (0.7 * age))
+            zones_type = "Tanaka (Standard Master)"
+            
+        return {
+            "mhr": mhr,
+            "formula": zones_type,
+            "zones": {
+                "Z1": {"range": (int(mhr * 0.50), int(mhr * 0.60)), "desc": "Recuperación / Calentamiento"},
+                "Z2": {"range": (int(mhr * 0.60), int(mhr * 0.70)), "desc": "Aeróbico / Quema de grasa"},
+                "Z3": {"range": (int(mhr * 0.70), int(mhr * 0.80)), "desc": "Tempo / Resistencia aeróbica"},
+                "Z4": {"range": (int(mhr * 0.80), int(mhr * 0.90)), "desc": "Umbral Anaeróbico / Resistencia muscular"},
+                "Z5": {"range": (int(mhr * 0.90), mhr),           "desc": "VO2 Máximo / Esfuerzo Máximo"}
+            }
+        }
     def __init__(self, base_path: str = str(CONTEXT_BASE_PATH)):
         self.base_path = base_path
         self.db_path = DB_PATH
@@ -88,7 +130,30 @@ class ContextManager:
 
         if profile:
             context += f"- Nombre: {profile.get('nombre', 'N/A')}\n"
-            context += f"- Edad: {profile.get('edad', 'N/A')} años\n"
+            
+            meds = profile.get('medicaciones', [])
+            if meds:
+                context += f"- Medicación Activa: {', '.join(meds)}\n"
+
+            # Cálculo dinámico de edad
+            birth_date = profile.get('fecha_nacimiento')
+            age = self.calculate_age(birth_date) if birth_date else profile.get('edad', 49)
+            
+            hr_data = self.calculate_mhr_and_zones(age, meds)
+            mhr = hr_data['mhr']
+            zones = hr_data['zones']
+            
+            context += f"- Edad (Calculada): {age} años"
+            if birth_date:
+                context += f" (Nacido el {birth_date.split('T')[0]})"
+            context += "\n"
+            
+            context += f"- FC Máxima (Ajustada): {mhr} ppm (Fórmula: {hr_data['formula']})\n"
+            context += "- Zonas de Entrenamiento:\n"
+            for z, info in zones.items():
+                low, high = info['range']
+                context += f"  - {z}: {low}-{high} ppm ({info['desc']})\n"
+            
             context += f"- Altura: {profile.get('altura_cm', 'N/A')} cm\n"
             context += f"- Peso objetivo: {profile.get('peso_objetivo_kg', 'N/A')} kg\n"
             
@@ -147,10 +212,10 @@ class ContextManager:
         return context
 
     def get_pain_history(self, limit=10):
-        """Obtiene los últimos registros de dolor desde SQLite."""
+        """Obtiene los últimos registros de dolor desde SQLite con metadatos."""
         conn = self._get_connection()
         try:
-            rows = conn.execute("SELECT date, level, notes FROM pain_logs ORDER BY created_at DESC LIMIT ?", (limit,)).fetchall()
+            rows = conn.execute("SELECT date, level, side, location, source, notes FROM pain_logs ORDER BY created_at DESC LIMIT ?", (limit,)).fetchall()
             return [dict(r) for r in rows]
         except Exception as e:
             logger.error(f"Error reading pain history: {e}")
@@ -158,14 +223,14 @@ class ContextManager:
         finally:
             conn.close()
 
-    def log_pain(self, level: int, notes: str = "") -> None:
-        """Registra un nuevo evento de dolor en SQLite."""
+    def log_pain(self, level: int, notes: str = "", location: str = "Rodilla Derecha", side: str = "derecha", source: str = "user_manual") -> None:
+        """Registra un nuevo evento de dolor en SQLite con trazabilidad."""
         conn = self._get_connection()
         try:
             conn.execute("""
-                INSERT INTO pain_logs (date, level, notes)
-                VALUES (?, ?, ?)
-            """, (datetime.datetime.now().isoformat(), level, notes))
+                INSERT INTO pain_logs (date, level, location, side, source, notes)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (datetime.datetime.now().isoformat(), level, location, side, source, notes))
             conn.commit()
             
             # Actualizar tendencia en el historial médico

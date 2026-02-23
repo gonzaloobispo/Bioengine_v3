@@ -28,3 +28,7 @@ logs/
 
 # Antigravity Specific
 .agent/tmp/
+
+# Browser Profiles
+chrome_profile_notebooklm/
+
