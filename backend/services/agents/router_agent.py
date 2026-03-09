@@ -19,10 +19,11 @@ class RouterAgent:
     async def route(self, query: str, context: Dict[str, Any], chat_history: Optional[List[dict]] = None) -> Dict[str, Any]:
         """
         Analiza la consulta y la deriva al mejor agente disponible.
+        Usa un sistema híbrido: Keywords (System 1) + LLM Dispatch (System 2).
         """
         logger.info(f"🚦 Routing query: {query[:50]}...")
         
-        # 1. Obtener puntuaciones de todos los agentes
+        # 1. Obtener puntuaciones de todos los agentes (System 1 - Rápido)
         scores = {}
         agents = self.registry.get_all()
         
@@ -30,46 +31,69 @@ class RouterAgent:
             score = await agent.can_handle(query, context)
             scores[name] = score
             
-        # 2. Seleccionar el mejor agente
+        # 2. Seleccionar el mejor agente inicial
         best_agent_name = max(scores, key=scores.get)
         best_score = scores[best_agent_name]
         
-        # 3. Si la confianza es baja (< 0.4), el coach es el agente default
+        # 3. System 2 Dispatch: Si la confianza es media-baja, usamos el LLM para decidir
+        if best_score < 0.7 and self.model_client:
+            logger.info(f"🤔 Confianza media ({best_score}). Activando System 2 Dispatcher...")
+            llm_agent_name = await self.classify_intent_llm(query)
+            if llm_agent_name in agents:
+                logger.info(f"🎯 LLM Dispatcher re-enrutó a: {llm_agent_name}")
+                best_agent_name = llm_agent_name
+                best_score = 0.9 # Confianza del LLM
+        
+        # 4. Fallback final
         if best_score < 0.4:
-            logger.warning(f"⚠️ Baja confianza ({best_score}) para {best_agent_name}. Usando Coach por defecto.")
+            logger.warning(f"⚠️ Incluso con LLM la confianza es baja. Usando Coach por defecto.")
             best_agent_name = "coach"
             
         selected_agent = self.registry.get_agent(best_agent_name)
         
-        # 4. Procesar con el agente seleccionado
+        # 5. Procesar con el agente seleccionado
         response = await selected_agent.process(query, context, chat_history)
         
-        # 5. Añadir metadatos de enrutamiento (Estándar V4)
+        # 6. Añadir metadatos de enrutamiento (Estándar V4)
         response["_router"] = {
             "selected_agent": best_agent_name,
             "confidence": best_score,
-            "alternatives": scores
+            "alternatives": scores,
+            "dispatch_method": "llm" if best_score == 0.9 else "keywords"
         }
         
         return response
 
     async def classify_intent_llm(self, query: str) -> str:
         """
-        Usa el LLM para una clasificación de intención más técnica si el 
-        enrutamiento basado en keywords falla (System 2 Dispatch).
+        Usa el LLM para una clasificación de intención técnica (System 2 Dispatch).
         """
         if not self.model_client:
-            return "coach" # Fallback
+            return "coach"
             
-        prompt = f"""Clasifica la intención de esta consulta de un atleta:
-Consulta: "{query}"
+        prompt = f"""Actúa como el despachador central de BioEngine. Clasifica esta consulta del usuario para enviarla al especialista correcto.
 
-Categorías:
-- recovery: Dolor, lesiones, rehabilitación.
-- biomechanics: Técnica, video, postura.
-- coach: Rendimiento, planes, nutrición.
+CONSULTA: "{query}"
 
-Responde solo con el nombre de la categoría."""
+AGENTES DISPONIBLES:
+- recovery: Consultas sobre dolor físico, molestias, lesiones, fisioterapia o rehabilitación.
+- biomechanics: Consultas sobre técnica de carrera, postura, análisis de video, pisada o asimetrías de movimiento.
+- coach: Consultas sobre rendimiento, planificación, pulsaciones (FC), zonas de entrenamiento, nutrición o progreso general.
 
-        # En una implementación real, aquí llamaríamos al modelo
-        return "coach"
+Responde ÚNICAMENTE con el nombre del agente (recovery, biomechanics o coach)."""
+
+        try:
+            model_id = "gemini-2.0-flash-exp"
+            response = await self.model_client.aio.models.generate_content(
+                model=model_id,
+                contents=prompt
+            )
+            intent = response.text.strip().lower()
+            # Limpiar posibles adornos del LLM
+            for agent in ["recovery", "biomechanics", "coach"]:
+                if agent in intent:
+                    return agent
+            return "coach"
+        except Exception as e:
+            logger.error(f"Error en LLM intent classification: {e}")
+            return "coach"

@@ -11,6 +11,7 @@ class SessionType(str, Enum):
     ELLIPTICAL = "Elíptica"
     BIKE = "Bici"
     SWIM = "Natación"
+    MOBILITY = "Movilidad/Core"
 
 class MetricType(str, Enum):
     HR_ZONE = "Zona FC"
@@ -27,6 +28,7 @@ class WorkoutItem(BaseModel):
     sets: Optional[int] = None
     reps: Optional[Union[int, str]] = None
     intensity: Optional[str] = None # Ej: "70% RM", "RPE 8"
+    duration_min: Optional[int] = None
 
 class TrainingSession(BaseModel):
     date: date

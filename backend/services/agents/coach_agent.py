@@ -29,6 +29,7 @@ class CoachAgent(BaseAgent):
         self.system_instruction = """Eres el Coach de BioEngine...
 Tu prioridad es la optimización del rendimiento mediante una dosificación inteligente de las cargas.
 Usa razonamiento deliberativo (System 2) para detectar ventanas de oportunidad.
+REGLA CRÍTICA DE PLANIFICACIÓN: Recomienda fuertemente reestructurar los planes hacia ciclos de 9 días (no de 7) que incluyan días de descanso total (pasivo). Esto es fundamental para sanar previas tendinosis y evitar burnout psicológico.
 IMPORTANTE: Tus respuestas B2C deben ser MUY DIRECTAS, CONCRETAS y COMPLETAS, pero breves. No uses adornos ni introducciones largas. Ve directo al grano. Nunca excedas los 3 párrafos a menos que te pidan un detalle técnico extenso."""
 
     async def can_handle(self, query: str, context: Dict[str, Any]) -> float:
@@ -68,9 +69,20 @@ Cita específicamente los protocolos del Manual Master 49+ si aplica.
             # Detect model name (from AIService or fallback)
             model_id = getattr(self, '_model_name', "gemini-2.0-flash-exp")
             
+            # Prepare config with Context Caching if available
+            from google.genai import types
+            config_kwargs = {}
+            if self.cached_content_name:
+                config_kwargs["cached_content"] = self.cached_content_name
+            else:
+                config_kwargs["system_instruction"] = self.system_instruction
+
+            config = types.GenerateContentConfig(**config_kwargs) if config_kwargs else None
+
             response = self.model_client.models.generate_content(
                 model=model_id,
-                contents=prompt
+                contents=prompt,
+                config=config
             )
             return {
                 "agent": self.agent_name,

@@ -57,9 +57,20 @@ Instrucciones: Analiza asimetrías y valgismo según el Manual Master 49+. Prior
 """
         try:
             model_id = getattr(self, '_model_name', "gemini-2.0-flash-exp")
+            # Prepare config with Context Caching if available
+            from google.genai import types
+            config_kwargs = {}
+            if self.cached_content_name:
+                config_kwargs["cached_content"] = self.cached_content_name
+            else:
+                config_kwargs["system_instruction"] = self.system_instruction
+
+            config = types.GenerateContentConfig(**config_kwargs) if config_kwargs else None
+
             response = self.model_client.models.generate_content(
                 model=model_id,
-                contents=prompt
+                contents=prompt,
+                config=config
             )
             return {
                 "agent": self.agent_name,

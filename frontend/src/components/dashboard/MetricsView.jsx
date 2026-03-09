@@ -19,7 +19,28 @@ import {
 } from 'recharts';
 
 const MetricsView = ({ kpis, activitiesCount, dateFilter, typeFilter, lastWeight, lastWeightDate, totalKm, totalHours, biometrics, trends }) => {
+    const [chartReady, setChartReady] = React.useState(false);
+    const containerRef = React.useRef(null);
 
+    React.useEffect(() => {
+        let checkCount = 0;
+        const checkDimensions = () => {
+            if (containerRef.current?.offsetHeight > 0) {
+                setChartReady(true);
+            } else if (checkCount < 10) {
+                checkCount++;
+                setTimeout(checkDimensions, 100);
+            } else {
+                // Fallback to true after 1s anyway to avoid infinite loading
+                setChartReady(true);
+            }
+        };
+
+        const timer = setTimeout(checkDimensions, 1000);
+        return () => clearTimeout(timer);
+    }, []);
+
+    const acwr = (kpis?.articular?.acwr || 0).toFixed(2);
     // Calcular promedio y max de peso para referencias
     const weightData = (biometrics || []).slice(0, 90).reverse();
     const avgWeight = weightData.length ? (weightData.reduce((acc, curr) => acc + curr.peso, 0) / weightData.length) : 0;
@@ -113,50 +134,55 @@ const MetricsView = ({ kpis, activitiesCount, dateFilter, typeFilter, lastWeight
                     style={{ height: '400px' }}
                 >
                     <div className="card-header">
-                        <span className="card-title">Evolución de Peso (90 días)</span>
+                        <span className="card-title">Evolución de Peso</span>
                         <Scale size={20} color="var(--accent-green)" />
                     </div>
-                    <ResponsiveContainer width="100%" height="85%">
-                        <AreaChart data={weightData}>
-                            <defs>
-                                <linearGradient id="colorWeightMetric" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="var(--accent-green)" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="var(--accent-green)" stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                            <XAxis
-                                dataKey="fecha"
-                                stroke="var(--text-muted)"
-                                fontSize={10}
-                                tickFormatter={(val) => val ? new Date(val).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : ''}
-                            />
-                            <YAxis
-                                stroke="var(--text-muted)"
-                                fontSize={10}
-                                domain={['dataMin - 1', 'dataMax + 1']}
-                            />
-                            <Tooltip
-                                contentStyle={{ background: '#1a1f35', border: '1px solid var(--border)', borderRadius: '12px' }}
-                                labelFormatter={(val) => val ? new Date(val).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '--'}
-                                formatter={(value) => [`${value} kg`, 'Peso']}
-                            />
-                            <Area
-                                type="monotone"
-                                dataKey="peso"
-                                stroke="var(--accent-green)"
-                                fillOpacity={1}
-                                fill="url(#colorWeightMetric)"
-                                strokeWidth={2}
-                            />
-                            {avgWeight > 0 && (
-                                <ReferenceLine y={avgWeight} stroke="rgba(255,255,255,0.2)" strokeDasharray="3 3" label={{ position: 'right', value: 'Avg', fill: 'rgba(255,255,255,0.3)', fontSize: 10 }} />
-                            )}
-                        </AreaChart>
-                    </ResponsiveContainer>
+                    <div ref={containerRef} style={{ height: '350px', minHeight: '350px', width: '100%' }}>
+                        {chartReady && weightData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%" debounce={100} minWidth={100} minHeight={100}>
+                                <AreaChart data={weightData}>
+                                    <defs>
+                                        <linearGradient id="colorWeightMetric" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="var(--accent-green)" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="var(--accent-green)" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                                    <XAxis
+                                        dataKey="fecha"
+                                        stroke="var(--text-muted)"
+                                        fontSize={10}
+                                        tickFormatter={(val) => val ? new Date(val).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }) : ''}
+                                    />
+                                    <YAxis
+                                        stroke="var(--text-muted)"
+                                        fontSize={10}
+                                        domain={['dataMin - 1', 'dataMax + 1']}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{ background: '#1a1f35', border: '1px solid var(--border)', borderRadius: '12px' }}
+                                        formatter={(value) => [`${value} kg`, 'Peso']}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="peso"
+                                        stroke="var(--accent-green)"
+                                        fillOpacity={1}
+                                        fill="url(#colorWeightMetric)"
+                                        strokeWidth={2}
+                                    />
+                                    {avgWeight > 0 && (
+                                        <ReferenceLine y={avgWeight} stroke="rgba(255,255,255,0.2)" strokeDasharray="3 3" label={{ position: 'right', value: 'Avg', fill: 'rgba(255,255,255,0.3)', fontSize: 10 }} />
+                                    )}
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>Cargando...</div>
+                        )}
+                    </div>
                 </motion.div>
 
-                {/* Training Load / Volume Placeholder (To be expanded with real load data) */}
+                {/* Training Load (ACWR) Chart */}
                 <motion.div
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -168,46 +194,52 @@ const MetricsView = ({ kpis, activitiesCount, dateFilter, typeFilter, lastWeight
                         <span className="card-title">Carga de Entrenamiento (ACWR)</span>
                         <BarChart2 size={20} color="var(--accent-purple)" />
                     </div>
-                    <ResponsiveContainer width="100%" height="85%">
-                        <ComposedChart data={trends}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                            <XAxis
-                                dataKey="date"
-                                stroke="var(--text-muted)"
-                                fontSize={10}
-                                tickFormatter={(val) => val ? new Date(val).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : ''}
-                            />
-                            <YAxis stroke="var(--text-muted)" fontSize={10} />
-                            <Tooltip
-                                contentStyle={{ background: '#1a1f35', border: '1px solid var(--border)', borderRadius: '12px' }}
-                            />
-                            <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '10px' }} />
-                            <Bar
-                                dataKey="load"
-                                name="Carga Diaria"
-                                fill="var(--accent-purple)"
-                                opacity={0.2}
-                                radius={[2, 2, 0, 0]}
-                            />
-                            <Line
-                                type="monotone"
-                                dataKey="load_7d"
-                                name="Aguda (7d)"
-                                stroke="var(--accent-blue)"
-                                strokeWidth={2}
-                                dot={false}
-                            />
-                            <Line
-                                type="monotone"
-                                dataKey="load_28d"
-                                name="Crónica (28d)"
-                                stroke="var(--accent-green)"
-                                strokeWidth={2}
-                                strokeDasharray="5 5"
-                                dot={false}
-                            />
-                        </ComposedChart>
-                    </ResponsiveContainer>
+                    <div style={{ height: '350px', minHeight: '350px', width: '100%' }}>
+                        {chartReady && (trends?.fitness_fatigue?.length > 0) ? (
+                            <ResponsiveContainer width="100%" height="100%" debounce={100} minWidth={100} minHeight={100}>
+                                <ComposedChart data={trends?.fitness_fatigue || []}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                                    <XAxis
+                                        dataKey="date"
+                                        stroke="var(--text-muted)"
+                                        fontSize={10}
+                                        tickFormatter={(val) => val ? new Date(val).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }) : ''}
+                                    />
+                                    <YAxis stroke="var(--text-muted)" fontSize={10} />
+                                    <Tooltip
+                                        contentStyle={{ background: '#1a1f35', border: '1px solid var(--border)', borderRadius: '12px' }}
+                                    />
+                                    <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '10px' }} />
+                                    <Bar
+                                        dataKey="load"
+                                        name="Carga Diaria"
+                                        fill="var(--accent-purple)"
+                                        opacity={0.2}
+                                        radius={[2, 2, 0, 0]}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="load_7d"
+                                        name="Aguda (7d)"
+                                        stroke="var(--accent-blue)"
+                                        strokeWidth={2}
+                                        dot={false}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="load_28d"
+                                        name="Crónica (28d)"
+                                        stroke="var(--accent-green)"
+                                        strokeWidth={2}
+                                        strokeDasharray="5 5"
+                                        dot={false}
+                                    />
+                                </ComposedChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>Cargando...</div>
+                        )}
+                    </div>
                 </motion.div>
 
             </div>

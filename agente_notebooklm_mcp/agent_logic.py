@@ -2,40 +2,72 @@
 import os
 import subprocess
 import sys
-from .connection_tester import test_connection, fix_connection, MCP_PATH
+import time
+import httpx
 
-def update_mcp():
-    print("[*] Buscando actualizaciones para NotebookLM MCP...")
+# Configuración centralizada
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SIDECAR_SCRIPT = os.path.join(os.path.dirname(BASE_DIR), "START_SIDECAR.bat")
+SERVER_URL = "http://127.0.0.1:8000"
+
+def is_sidecar_running():
     try:
-        subprocess.run([sys.executable, "-m", "pip", "install", "--upgrade", "notebooklm-mcp-server"], check=True)
-        print("✅ Verificación de actualización completada.")
+        r = httpx.get(f"{SERVER_URL}/health", timeout=2.0)
+        return r.status_code == 200
+    except:
+        return False
+
+def ensure_sidecar():
+    if is_sidecar_running():
+        print("✅ Motor Sidecar ya está en ejecución.")
+        return True
+    
+    print("[*] Iniciando Motor Sidecar (Sidecar Server)...")
+    try:
+        # Iniciamos el .bat en una nueva ventana de consola de forma independiente
+        subprocess.Popen(["cmd", "/c", "start", "NOTEBOOKLM_SIDECAR", SIDECAR_SCRIPT], shell=True)
+        
+        # Esperar a que el servidor responda
+        for _ in range(15):
+            time.sleep(2)
+            if is_sidecar_running():
+                print("✅ Motor Sidecar iniciado y saludable.")
+                return True
+        print("❌ El Motor Sidecar tardó demasiado en responder.")
+        return False
     except Exception as e:
-        print(f"❌ Error al actualizar: {e}")
+        print(f"❌ Error al iniciar Sidecar: {e}")
+        return False
 
 def run_maintenance():
-    print("=== AGENTE NOTEBOOKLM MCP - MANTENIMIENTO ===")
+    print("\n" + "="*50)
+    print("   AGENTE NOTEBOOKLM MCP - ORQUESTADOR DE PUENTE")
+    print("="*50)
     
-    # 1. Actualizar
-    update_mcp()
+    # 1. Asegurar que el motor de navegación existe
+    if not ensure_sidecar():
+        print("❌ FALLO CRÍTICO: No se pudo asegurar el motor de navegación.")
+        return False
+
+    # 2. Sincronizar Dashboard
+    print("[*] Sincronizando datos con el Dashboard...")
+    try:
+        from .sync_dashboard import update_dashboard_data
+        update_dashboard_data()
+        print("✅ Dashboard sincronizado con datos reales.")
+    except Exception as e:
+        print(f"⚠️  Advertencia: Error sincronizando dashboard: {e}")
+
+    # 3. Conocimiento Técnico (Auto-diagnóstico)
+    print("\n[INFO] Base de Conocimiento MCP:")
+    print(" - Selectores: textarea.query-box-input")
+    print(" - Puerto: 8000 (Sidecar API)")
+    print(" - Handshake: Chrome Profile Persistente")
     
-    # 2. Probar
-    success, msg = test_connection()
-    
-    # 3. Reparar si falla
-    if not success:
-        fix_connection()
-        success, msg = test_connection()
-        
-    if success:
-        print("✅ El agente confirma que el sistema está UP y configurado.")
-        # 4. Sincronizar Dashboard si la conexión es exitosa
-        try:
-            from .sync_dashboard import update_dashboard_data
-            update_dashboard_data()
-        except ImportError:
-            print("[!] Módulo de sincronización no encontrado.")
-    else:
-        print("❌ El sistema requiere intervención manual. El entorno ha sido limpiado.")
+    print("\n" + "="*50)
+    print("   ESTADO: OPERATIVO")
+    print("="*50 + "\n")
+    return True
 
 if __name__ == "__main__":
     run_maintenance()

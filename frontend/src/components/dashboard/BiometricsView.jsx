@@ -12,6 +12,15 @@ import {
 } from 'recharts';
 
 const BiometricsView = ({ biometrics }) => {
+    const [chartReady, setChartReady] = React.useState(false);
+
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            setChartReady(true);
+        }, 1000);
+        return () => clearTimeout(timer);
+    }, []);
+
     const lastWeight = biometrics[0]?.peso || '--';
     const lastWeightDate = biometrics[0]?.fecha ? new Date(biometrics[0].fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '--';
 
@@ -88,43 +97,49 @@ const BiometricsView = ({ biometrics }) => {
                     <span className="card-title">Evolución de Peso (Últimos 90 días)</span>
                     <Scale size={20} color="var(--accent-green)" />
                 </div>
-                <ResponsiveContainer width="100%" height="90%">
-                    <AreaChart data={(biometrics || []).slice(0, 90).reverse()}>
-                        <defs>
-                            <linearGradient id="colorWeightBig" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="var(--accent-green)" stopOpacity={0.3} />
-                                <stop offset="95%" stopColor="var(--accent-green)" stopOpacity={0} />
-                            </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                        <XAxis
-                            dataKey="fecha"
-                            stroke="var(--text-muted)"
-                            fontSize={11}
-                            tickFormatter={(val) => val ? new Date(val).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : ''}
-                        />
-                        <YAxis
-                            stroke="var(--text-muted)"
-                            fontSize={11}
-                            domain={['dataMin - 2', 'dataMax + 2']}
-                        />
-                        <Tooltip
-                            contentStyle={{ background: '#1a1f35', border: '1px solid var(--border)', borderRadius: '12px' }}
-                            labelFormatter={(val) => val ? new Date(val).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '--'}
-                            formatter={(value) => [`${value} kg`, 'Peso']}
-                        />
-                        <Area
-                            type="monotone"
-                            dataKey="peso"
-                            stroke="var(--accent-green)"
-                            fillOpacity={1}
-                            fill="url(#colorWeightBig)"
-                            strokeWidth={3}
-                            dot={{ fill: 'var(--accent-green)', r: 4 }}
-                            activeDot={{ r: 7, fill: 'var(--accent-green)' }}
-                        />
-                    </AreaChart>
-                </ResponsiveContainer>
+                <div style={{ height: '350px', minHeight: '350px', width: '100%' }}>
+                    {chartReady && biometrics && biometrics.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%" debounce={100} minWidth={100} minHeight={100}>
+                            <AreaChart data={(biometrics || []).slice(0, 90).reverse()}>
+                                <defs>
+                                    <linearGradient id="colorWeightBig" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="var(--accent-green)" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="var(--accent-green)" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                                <XAxis
+                                    dataKey="fecha"
+                                    stroke="var(--text-muted)"
+                                    fontSize={11}
+                                    tickFormatter={(val) => val ? new Date(val).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : ''}
+                                />
+                                <YAxis
+                                    stroke="var(--text-muted)"
+                                    fontSize={11}
+                                    domain={['dataMin - 2', 'dataMax + 2']}
+                                />
+                                <Tooltip
+                                    contentStyle={{ background: '#1a1f35', border: '1px solid var(--border)', borderRadius: '122px' }}
+                                    labelFormatter={(val) => val ? new Date(val).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '--'}
+                                    formatter={(value) => [`${value} kg`, 'Peso']}
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="peso"
+                                    stroke="var(--accent-green)"
+                                    fillOpacity={1}
+                                    fill="url(#colorWeightBig)"
+                                    strokeWidth={3}
+                                    dot={{ fill: 'var(--accent-green)', r: 4 }}
+                                    activeDot={{ r: 7, fill: 'var(--accent-green)' }}
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>Cargando...</div>
+                    )}
+                </div>
             </motion.div>
         </>
     );

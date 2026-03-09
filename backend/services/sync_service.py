@@ -342,6 +342,101 @@ class SyncService:
             self.log_sync('withings', 'error', str(e))
             return {"status": "error", "message": f"Timeout o Error en Withings: {str(e)}"}
 
+    def sync_garmin_gear(self):
+        """Sincroniza el kilometraje de los equipos desde Garmin."""
+        try:
+            creds = self.get_secret('garmin')
+            if not creds:
+                return {"status": "error", "message": "No Garmin credentials"}
+
+            from garminconnect import Garmin
+            client = Garmin(creds['email'], creds['password'])
+            client.login()
+
+            profile = client.get_user_profile()
+            uuid = profile.get('uuid') or profile.get('userProfileGuid') or profile.get('id')
+            gear = client.get_gear(uuid)
+
+            gear_mapping = {
+                "ASICS Kayano 31": "Kayano 31",
+                "Brooks Adrenaline GT23": "Brooks Adrenaline GTS 23",
+                "FX Sport AL 3": "Trek FX Sport AL 3",
+                "Hoka Speedgoat 6": "Hoka Speedgoat 6",
+                "New Balance Fresh Foam Garoe": "New Balance Garoe",
+                "Babolat Propulse Fury": "Babolat Fury 3"
+            }
+
+            results = {}
+            import time
+            for g in gear:
+                name = g.get('customMakeModel')
+                if name in gear_mapping:
+                    md_name = gear_mapping[name]
+                    # Fetch detailed stats for precise totalDistance with retries
+                    max_retries = 3
+                    for attempt in range(max_retries):
+                        try:
+                            stats = client.get_gear_stats(g['gearPk'])
+                            total_km = round(stats['totalDistance'] / 1000.0, 2)
+                            results[md_name] = total_km
+                            print(f"Synced {md_name}: {total_km} km")
+                            break
+                        except Exception as e:
+                            print(f"Attempt {attempt+1} failed for {name}: {e}")
+                            if attempt == max_retries - 1:
+                                self.log_sync('garmin_gear', 'warning', f"Failed to fetch stats for {name}")
+                            time.sleep(2)
+                    time.sleep(1) # Delay between gear items
+
+            if not results:
+                return {"status": "success", "message": "No matching gear found", "results": {}}
+
+            # Actualizar equipamiento.md
+            md_path = r"c:\BioEngine_V3\BioEngine_V3_Contexto_Base\equipamiento.md"
+            with open(md_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+
+            import re
+            new_content = content
+            now_str = datetime.datetime.now().strftime('%Y-%m-%d')
+            
+            for md_name, km in results.items():
+                # Regex para encontrar la línea del equipo y actualizar el kilometraje
+                # Ejemplo: *   **Kayano 31** (Entrenamiento): ~0 km ...
+                pattern = rf"(\*\*|__){re.escape(md_name)}(\*\*|__)(.*?)\~(\d+[,.]?\d*)\s*km"
+                replacement = rf"\1{md_name}\2\3~{km} km"
+                new_content = re.sub(pattern, replacement, new_content, flags=re.IGNORECASE)
+
+            # Actualizar nota de calibración
+            calib_pattern = r"Nota: Los km se calculan sumando el saldo manual.*"
+            calib_replacement = f"Nota: Los km se calculan sumando el saldo manual (CALIBRADO GARMIN EL {now_str}) + actividades posteriores."
+            new_content = re.sub(calib_pattern, calib_replacement, new_content)
+
+            with open(md_path, 'w', encoding='utf-8') as f:
+                f.write(new_content)
+
+            # Actualizar useBioEngineData.js (Frontend)
+            fe_path = r"c:\BioEngine_V3\frontend\src\hooks\useBioEngineData.js"
+            if os.path.exists(fe_path):
+                with open(fe_path, 'r', encoding='utf-8') as f:
+                    fe_content = f.read()
+                
+                # Update CALIBRATION_DATE to today's date
+                fe_now = datetime.datetime.now().strftime('%Y-%m-%dT23:59:59')
+                fe_pattern = r"const CALIBRATION_DATE = new Date\('[^']*'\);"
+                fe_replacement = f"const CALIBRATION_DATE = new Date('{fe_now}');"
+                fe_content = re.sub(fe_pattern, fe_replacement, fe_content)
+                
+                with open(fe_path, 'w', encoding='utf-8') as f:
+                    f.write(fe_content)
+
+            self.log_sync('garmin_gear', 'success', f"Equipos actualizados: {', '.join(results.keys())}")
+            return {"status": "success", "updated": results}
+
+        except Exception as e:
+            self.log_sync('garmin_gear', 'error', str(e))
+            return {"status": "error", "message": str(e)}
+
 if __name__ == "__main__":
     service = SyncService()
     print("Sincronizando Garmin...")

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE } from '../../config';
+import DataHealthIndicator from './DataHealthIndicator';
 
 const SystemDashboard = ({ adminToken }) => {
     const [status, setStatus] = useState(null);
@@ -211,6 +212,9 @@ const SystemDashboard = ({ adminToken }) => {
                         </div>
                     </div>
                 </div>
+
+                {/* Data Health Card */}
+                <DataHealthIndicator data={status.data_health} />
             </div>
 
             {/* Provider Breakdown Table */}

@@ -21,6 +21,7 @@ class BaseAgent(ABC):
         self.model_client = model_client
         self.capabilities: List[AgentCapability] = []
         self.system_instruction = ""
+        self.cached_content_name = None # For Gemini Context Caching
 
     def register_capability(self, capability: AgentCapability):
         """Registra una capacidad técnica del agente."""

@@ -15,6 +15,15 @@ venv/
 logs/
 *.log
 %LOG_FILE%
+coach_analysis_*.json
+temp_*.mp4
+temp_*.mov
+
+# Scripts de mantenimiento y pruebas locales
+scripts/
+tmp_*.py
+test_*.py
+debug_*.txt
 
 # Bases de datos 
 # Ignoramos por defecto para evitar subir datos sensibles de salud

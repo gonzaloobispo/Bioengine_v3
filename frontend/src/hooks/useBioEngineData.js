@@ -47,12 +47,9 @@ const normalizeActivityType = (act) => {
     return ACTIVITY_MAP[lowType] || (typeof type === 'string' ? type.charAt(0).toUpperCase() + type.slice(1) : 'Otros');
 };
 
+// Note: Logging is now automated via telemetry.js interceptors
 const remoteLog = async (level, message, data = {}) => {
-    try {
-        await axios.post(`${API_BASE}/log/remote`, { level, message, data });
-    } catch (e) {
-        // Silently ignore logging failures
-    }
+    // This is essentially redundant now but kept for specific manual events if needed
 };
 
 const calculateReadiness = (health) => {
@@ -88,6 +85,7 @@ export const useBioEngineData = () => {
     const [trends, setTrends] = useState([]);
     const [nutrition, setNutrition] = useState([]);
     const [profile, setProfile] = useState(null);
+    const [globalPlans, setGlobalPlans] = useState([]);
 
     // AI & Analysis State
     const [coachAnalysis, setCoachAnalysis] = useState('📊 Cargando tus datos...');
@@ -108,12 +106,17 @@ export const useBioEngineData = () => {
 
     const fetchData = useCallback(async (showGlobalLoading = true) => {
         if (showGlobalLoading) setLoading(true);
+
+        const api = axios.create({
+            baseURL: API_BASE,
+            timeout: 15000 // 15 seconds
+        });
+
         try {
             const fetchActivities = async () => {
                 try {
-                    const res = await axios.get(`${API_BASE}/activities`);
+                    const res = await api.get('/activities');
                     setActivities(Array.isArray(res.data) ? res.data : []);
-                    remoteLog('info', 'Activities fetched', { count: res.data?.length });
                 } catch (e) {
                     console.error("Error loading activities:", e);
                     setActivities([]);
@@ -122,7 +125,7 @@ export const useBioEngineData = () => {
 
             const fetchBiometrics = async () => {
                 try {
-                    const res = await axios.get(`${API_BASE}/biometrics`);
+                    const res = await api.get('/biometrics');
                     const data = Array.isArray(res.data) ? res.data : [];
                     setBiometrics(data.sort((a, b) => new Date(b.fecha) - new Date(a.fecha)));
                 } catch (e) {
@@ -133,7 +136,7 @@ export const useBioEngineData = () => {
 
             const fetchEquipment = async () => {
                 try {
-                    const res = await axios.get(`${API_BASE}/equipment`);
+                    const res = await api.get('/equipment');
                     setEquipment(res.data);
                 } catch (e) {
                     console.error("Error loading equipment:", e);
@@ -142,7 +145,7 @@ export const useBioEngineData = () => {
 
             const fetchHealth = async () => {
                 try {
-                    const res = await axios.get(`${API_BASE}/health/daily`);
+                    const res = await api.get('/health/daily');
                     setHealth(Array.isArray(res.data) ? res.data : []);
                 } catch (e) {
                     console.error("Error loading health metrics:", e);
@@ -152,8 +155,8 @@ export const useBioEngineData = () => {
 
             const fetchTrends = async () => {
                 try {
-                    const res = await axios.get(`${API_BASE}/kpis/trends`);
-                    setTrends(res.data);
+                    const res = await api.get('/kpis/trends');
+                    setTrends(Array.isArray(res.data) ? res.data : []);
                 } catch (e) {
                     console.error("Error loading trends:", e);
                     setTrends([]);
@@ -162,7 +165,7 @@ export const useBioEngineData = () => {
 
             const fetchNutrition = async () => {
                 try {
-                    const res = await axios.get(`${API_BASE}/nutrition`);
+                    const res = await api.get('/nutrition');
                     setNutrition(Array.isArray(res.data) ? res.data : []);
                 } catch (e) {
                     console.error("Error loading nutrition:", e);
@@ -172,7 +175,7 @@ export const useBioEngineData = () => {
 
             const fetchProfile = async () => {
                 try {
-                    const res = await axios.get(`${API_BASE}/profile`);
+                    const res = await api.get('/profile');
                     setProfile(res.data);
                 } catch (e) {
                     console.error("Error loading profile:", e);
@@ -180,15 +183,32 @@ export const useBioEngineData = () => {
                 }
             };
 
-            await Promise.all([
-                fetchActivities(),
-                fetchBiometrics(),
-                fetchEquipment(),
-                fetchHealth(),
-                fetchTrends(),
-                fetchNutrition(),
-                fetchProfile()
-            ]);
+            const fetchPlans = async () => {
+                try {
+                    const res = await api.get('/plans');
+                    setGlobalPlans(res.data);
+                } catch (e) {
+                    console.error("Error loading plans:", e);
+                }
+            };
+
+            const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+            await fetchActivities();
+            await delay(100);
+            await fetchBiometrics();
+            await delay(100);
+            await fetchEquipment();
+            await delay(100);
+            await fetchHealth();
+            await delay(100);
+            await fetchTrends();
+            await delay(100);
+            await fetchNutrition();
+            await delay(100);
+            await fetchProfile();
+            await delay(100);
+            await fetchPlans();
 
             const fetchCoachAnalysis = async () => {
                 setCoachAnalysis("🤖 Analizando datos recién sincronizados...");
@@ -423,11 +443,14 @@ export const useBioEngineData = () => {
         let acwrColor = "var(--accent-green)";
         let kneeSuggestion = "Sugerencia: Mantener cadencia > 170 spm.";
 
+        if (acwrBike > acwrRoad && acwrBike > acwrTrail) {
+            kneeSuggestion = "Sugerencia: Mantener 85-95 rpm en bici.";
+        }
+
         if (acwr > 1.5) {
             const isMainlyBike = (acwrBike >= acwr && acwrRoad <= 1.3 && acwrTrail <= 1.3);
             acwrStatus = isMainlyBike ? "PICO DE VOLUMEN (BIKE)" : "ZONA ROJA (PELIGRO)";
             acwrColor = isMainlyBike ? "var(--accent-yellow)" : "#ff4b4b";
-            if (isMainlyBike) kneeSuggestion = "Sugerencia: Mantener 85-95 rpm en bici.";
         } else if (acwr > 1.3) {
             acwrStatus = "ZONA AMARILLA";
             acwrColor = "var(--accent-yellow)";
@@ -532,6 +555,8 @@ export const useBioEngineData = () => {
         normalizeActivityType,
         trends,
         nutrition,
-        profile
+        profile,
+        globalPlans,
+        setGlobalPlans
     };
 };

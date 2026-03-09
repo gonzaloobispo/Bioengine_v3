@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import './telemetry';
 import {
   Activity,
   Scale,
@@ -20,12 +21,13 @@ import {
 import { AnimatePresence } from 'framer-motion';
 
 // Hooks & Components
+import { API_BASE } from './config';
 import { useBioEngineData } from './hooks/useBioEngineData';
 import Sidebar from './components/layout/Sidebar';
 import CoachAnalysisCard from './components/dashboard/CoachAnalysisCard';
 import KPIOverview from './components/dashboard/KPIOverview';
 import ActivityTable from './components/dashboard/ActivityTable';
-import MetricsView from './components/dashboard/MetricsView';
+import UnifiedAnalysis from './components/dashboard/UnifiedAnalysis';
 import EquiposView from './components/dashboard/EquiposView';
 import MemoryView from './components/dashboard/MemoryView';
 import ChatSidebar from './components/dashboard/ChatSidebar';
@@ -41,7 +43,6 @@ import SmartAlertsPanel from './components/dashboard/SmartAlertsPanel';
 import ProfileView from './components/dashboard/ProfileView';
 import SettingsView from './components/dashboard/SettingsView';
 import KnowledgeLibrary from './components/dashboard/KnowledgeLibrary';
-import NutritionView from './components/dashboard/NutritionView';
 import AnalyzerView from './components/dashboard/AnalyzerView';
 import Toast from './components/Toast';
 
@@ -80,7 +81,9 @@ function App() {
     normalizeActivityType,
     trends,
     nutrition,
-    profile
+    profile,
+    globalPlans,
+    setGlobalPlans
   } = useBioEngineData();
 
   const [activeView, setActiveView] = useState('overview');
@@ -95,13 +98,13 @@ function App() {
   const showToast = (message, type = 'success') => setToast({ message, type });
   const closeToast = () => setToast(null);
 
-  // Global plans state (shared between CalendarView and PlansView)
-  const [globalPlans, setGlobalPlans] = useState([]);
+  const [chartReady, setChartReady] = useState(false);
+
   useEffect(() => {
-    fetch('http://localhost:8001/plans')
-      .then(r => r.json())
-      .then(data => setGlobalPlans(data))
-      .catch(() => { });
+    const timer = setTimeout(() => {
+      setChartReady(true);
+    }, 1000); // Aumentado a 1000ms para consistencia y estabilidad total
+    return () => clearTimeout(timer);
   }, []);
 
   const handleRunSync = async () => {
@@ -263,7 +266,6 @@ function App() {
             <PainTracker />
             <HITLPanel showToast={showToast} />
             <TrainingIntelligence />
-            <TrainingTrends />
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))', gap: '2rem', marginTop: '2rem' }}>
               <div className="card" style={{ height: '400px' }}>
@@ -271,15 +273,19 @@ function App() {
                   <span className="card-title">Evolución de Peso</span>
                   <Scale size={20} color="var(--accent-green)" />
                 </div>
-                <ResponsiveContainer width="100%" height="85%">
-                  <AreaChart data={[...(biometrics || [])].slice(0, 30).reverse()}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                    <XAxis dataKey="fecha" stroke="var(--text-muted)" fontSize={10} tickFormatter={(val) => val?.split('T')[0]?.split('-').slice(1).reverse().join('/') || ''} />
-                    <YAxis stroke="var(--text-muted)" fontSize={10} domain={['dataMin - 1', 'dataMax + 1']} />
-                    <Tooltip contentStyle={{ background: '#1a1f35', border: '1px solid var(--border)' }} itemStyle={{ color: '#fff' }} />
-                    <Area type="monotone" dataKey="peso" stroke="var(--accent-green)" fill="var(--accent-green)" fillOpacity={0.1} strokeWidth={2} />
-                  </AreaChart>
-                </ResponsiveContainer>
+                {chartReady ? (
+                  <ResponsiveContainer width="100%" height="85%" debounce={100} minWidth={100} minHeight={100}>
+                    <AreaChart data={[...(biometrics || [])].slice(0, 30).reverse()}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                      <XAxis dataKey="fecha" stroke="var(--text-muted)" fontSize={10} tickFormatter={(val) => val?.split('T')[0]?.split('-').slice(1).reverse().join('/') || ''} />
+                      <YAxis stroke="var(--text-muted)" fontSize={10} domain={['dataMin - 1', 'dataMax + 1']} />
+                      <Tooltip contentStyle={{ background: '#1a1f35', border: '1px solid var(--border)' }} itemStyle={{ color: '#fff' }} />
+                      <Area type="monotone" dataKey="peso" stroke="var(--accent-green)" fill="var(--accent-green)" fillOpacity={0.1} strokeWidth={2} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div style={{ height: '85%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>Cargando...</div>
+                )}
               </div>
 
               <div className="card" style={{ height: '400px' }}>
@@ -287,24 +293,39 @@ function App() {
                   <span className="card-title">Distribución de Actividades</span>
                   <Activity size={20} color="var(--accent-blue)" />
                 </div>
-                <ResponsiveContainer width="100%" height="85%">
-                  <PieChart>
-                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="value">
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={['#00D2FF', '#00FFAA', '#A855F7', '#F59E0B', '#EF4444', '#EC4899', '#10B981'][index % 7]} />
-                      ))}
-                    </Pie>
-                    <Tooltip contentStyle={{ background: '#1a1f35', border: '1px solid var(--border)' }} itemStyle={{ color: '#fff' }} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
+                <div style={{ height: '300px', width: '100%', padding: '1rem' }}>
+                  {chartReady ? (
+                    <ResponsiveContainer width="100%" height="100%" debounce={100} minWidth={100} minHeight={100}>
+                      <PieChart>
+                        <Pie
+                          data={pieData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                          animationDuration={1000}
+                        >
+                          {pieData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={['#00D2FF', '#00FFAA', '#A855F7', '#F59E0B', '#EF4444', '#EC4899', '#10B981'][index % 7]} />
+                          ))}
+                        </Pie>
+                        <Tooltip contentStyle={{ background: '#1a1f35', border: '1px solid var(--border)' }} itemStyle={{ color: '#fff' }} />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>Cargando...</div>
+                  )}
+                </div>
               </div>
             </div>
           </>
         )}
 
         {activeView === 'metrics' && (
-          <MetricsView
+          <UnifiedAnalysis
             kpis={kpis}
             activitiesCount={filteredActivities.length}
             dateFilter={dateFilter}
@@ -315,6 +336,8 @@ function App() {
             totalHours={kpis.totalHours}
             biometrics={biometrics}
             trends={trends}
+            nutrition={nutrition}
+            showToast={showToast}
           />
         )}
 
@@ -464,14 +487,7 @@ function App() {
             onClearSearch={() => setLibrarySearch('')}
           />
         )}
-        {activeView === 'nutricion' && (
-          <NutritionView
-            nutrition={nutrition}
-            biometrics={biometrics}
-            weight={kpis.lastWeight}
-            showToast={showToast}
-          />
-        )}
+
 
         {activeView === 'analyzer' && <AnalyzerView />}
 

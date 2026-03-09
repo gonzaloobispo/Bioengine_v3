@@ -66,6 +66,7 @@ class AIService:
         
         # NotebookLM Bridge Implementation
         self.notebooklm_bridge = NotebookLMBridge(self.mcp_client)
+        self.biomechanics_pipeline = BiomechanicsPipeline()
 
         # Only initialize AI clients if enabled
         if self.AI_ENABLED:
@@ -160,7 +161,7 @@ class AIService:
                     agent.model_client = self.client
                     agent._model_name = self.model_name
                 
-                # CRITICAL FIX: Ensure Router gets the client too
+                # Setup Router
                 self.router.model_client = self.client
                 logger.info("Router Agent initialized with Gemini client.")
     
@@ -314,6 +315,17 @@ class AIService:
         clinical_status = await self.check_clinical_lock()
         context["clinical_status"] = clinical_status
         
+        # --- OPTIMIZACIÓN SOTA: Inyectar Cache de Contexto en Agentes ---
+        # Usamos la instrucción del Coach para la cache (es la más pesada y común)
+        system_instruction = (
+            "Eres BioEngine Coach, un asistente experto en triatlón, running y tenis.\n"
+            "Priorizas la seguridad y el razonamiento clínico."
+        )
+        cache_name = await self._get_or_create_context_cache(system_instruction)
+        if cache_name:
+            for agent in self.agent_registry.get_all().values():
+                agent.cached_content_name = cache_name
+
         if clinical_status["lock"]:
             # Inyectar advertencia en el mensaje para que el Router sepa que hay bloqueo
             user_message = f"[CLINICAL_LOCK_ACTIVE: {clinical_status['reason']}] " + user_message
@@ -364,9 +376,9 @@ class AIService:
             "MENCIONA explícitamente cómo el Atenolol influye en su eficiencia aeróbica (ej: 'Tu pulso es bajo, pero tu ritmo en Z2 es excelente para tu condición actual bajo medicación').\n"
             "3. RUNNING & TENIS: Tus consejos deben optimizar el rendimiento en carrera de calle/trail y la agilidad en tenis master.\n"
             "4. SALUD BIOMECÁNICA: Prioriza la protección de articulaciones (específicamente la rodilla derecha) mediante ejercicios de fortalecimiento y movilidad.\n"
-            "5. ADHERENCIA Y HÁBITOS: Utiliza técnicas de psicología deportiva para fomentar la constancia.\n"
+            "5. ADHERENCIA Y HÁBITOS: Utiliza técnicas de psicología deportiva. CRÍTICO: Recomienda fuertemente ciclos de entrenamiento de 9 días (en lugar de 7) que incluyan días de descanso total (pasivo) para garantizar frescura nerviosa, evitar burnout y curar la tendinosis.\n"
             "6. MÉTRICAS TÉCNICAS: Sé extremadamente preciso con las unidades. RUNNING: spm (objetivo 170-180). CICLISMO: rpm (objetivo 85-95).\n"
-            "7. GENERACIÓN DE PLANES: Usa tablas markdown, incluye propósitos biomecánicos para cada ejercicio.\n\n"
+            "7. GENERACIÓN DE PLANES: Usa tablas markdown, incluye propósitos biomecánicos para cada ejercicio. Adapta las rutinas a un ciclo de 9 días cuando sea posible.\n\n"
             "Tus respuestas deben ser precisas, motivadoras pero realistas, y basadas tanto en los datos históricos como en el conocimiento base.\n"
             "IMPORTANTE: Ten en cuenta la línea de tiempo y las restricciones de lesiones activas.\n\n"
             "Habla en español de forma natural y profesional."
@@ -467,9 +479,9 @@ class AIService:
             "Usa siempre la referencia de la fórmula de Brawner (FC Max ≈ 164 - 0.7*edad) para tus consejos.\n"
             "2. RUNNING & TENIS: Tus consejos deben optimizar el rendimiento en carrera de calle/trail y la agilidad en tenis master.\n"
             "3. SALUD BIOMECÁNICA: Prioriza la protección de articulaciones (específicamente la rodilla derecha) mediante ejercicios de fortalecimiento y movilidad.\n"
-            "4. ADHERENCIA Y HÁBITOS: Utiliza técnicas de psicología deportiva para fomentar la constancia.\n"
+            "4. ADHERENCIA Y HÁBITOS: Utiliza técnicas de psicología deportiva. CRÍTICO: Recomienda fuertemente ciclos de entrenamiento de 9 días (en lugar de 7) que incluyan días de descanso total (pasivo) para evitar burnout y curar la tendinosis.\n"
             "5. MÉTRICAS TÉCNICAS: Sé extremadamente preciso con las unidades. RUNNING: spm (objetivo 170-180). CICLISMO: rpm (objetivo 85-95).\n"
-            "6. GENERACIÓN DE PLANES: Usa tablas markdown, incluye propósitos biomecánicos para cada ejercicio.\n\n"
+            "6. GENERACIÓN DE PLANES: Usa tablas markdown, incluye propósitos biomecánicos para cada ejercicio. Adapta las rutinas a un ciclo de 9 días cuando sea posible.\n\n"
             "Tus respuestas deben ser precisas, motivadoras pero realistas, y basadas tanto en los datos históricos como en el conocimiento base.\n"
             "IMPORTANTE: Ten en cuenta la línea de tiempo y las restricciones de lesiones activas.\n\n"
             "=== AUTO-ACTUALIZACIÓN DE MEMORIA ===\n"
@@ -491,11 +503,15 @@ class AIService:
 
         full_response_accumulator = ""
         
+        # Prepare cache
+        cache_name = await self._get_or_create_context_cache(system_instruction)
+
         try:
-            logger.info("Starting Multi-Model Streaming API call")
+            logger.info(f"Starting Multi-Model Streaming API call with cache: {cache_name}")
             async for chunk in self.multi_model_client.generate_stream(
                 prompt=prompt,
-                system_instruction=system_instruction
+                system_instruction=system_instruction,
+                cached_content=cache_name
             ):
                 full_response_accumulator += chunk
                 yield chunk
@@ -590,29 +606,47 @@ class AIService:
         if not self.client:
             return {"summary": "Gemini API no configurada.", "metrics": {}, "feedback": []}
             
-        logger.info(f"Subiendo video para análisis biomecánico: {video_path}")
         try:
-            # Upload video using the GenAI SDK
-            # Since client.files.upload is sync, we run it in a thread if needed, but it's okay for now
+            # 1. EJECUTAR PIPELINE DE VISIÓN (MediaPipe) - Métricas Hard
+            logger.info(f"Iniciando pipeline MediaPipe para: {video_path}")
+            metrics_path = await asyncio.to_thread(self.biomechanics_pipeline.process_video, video_path)
+            mp_data = {}
+            try:
+                with open(metrics_path, 'r') as f:
+                    mp_data = json.load(f)
+            except Exception as e:
+                logger.error(f"Error leyendo métricas de MediaPipe: {e}")
+
+            # 2. SUBIR VIDEO A GEMINI - Análisis Semántico
             import asyncio
             video_file = await asyncio.to_thread(self.client.files.upload, file=video_path)
-            logger.info(f"Video subido: {video_file.name}")
+            logger.info(f"Video subido a Gemini: {video_file.name}")
             
-            prompt = """Eres un experto en biomecánica deportiva y entrenamiento (running y tenis). 
-Analiza este video del atleta en detalle. Retorna un JSON con exactitud la siguiente estructura, sin texto extra fuera del JSON (sin backticks de markdown):
-{
+            prompt = f"""Eres un experto en biomecánica deportiva y entrenamiento (running y tenis). 
+Analiza este video del atleta en detalle utilizando también las métricas extraídas por el motor de visión MediaPipe.
+
+DATOS TÉCNICOS EXTRAÍDOS (MediaPipe):
+{json.dumps(mp_data, indent=2)}
+
+Instrucciones:
+- Valida si las métricas de MediaPipe coinciden con lo que ves.
+- Presta especial atención a la asimetría y el valgo de rodilla.
+- Si detectas valgo severo, inyecta una advertencia de riesgo alto.
+
+Retorna un JSON con la siguiente estructura (sin backticks):
+{{
   "summary": "Resumen general de 2-3 líneas de la biomecánica observada.",
-  "metrics": {
-    "cadencia_visual": "Valor estimado (ej: 170)",
+  "metrics": {{
+    "cadencia_visual": "Valor (MediaPipe sugiere {mp_data.get('metrics', {}).get('cadence_est_spm', 'N/A')})",
     "oscilacion_vertical": "Baja/Moderada/Alta",
-    "valgo_rodilla": "No/Leve/Severo (Indica lado si es evidente)"
-  },
+    "valgo_rodilla": "No/Leve/Severo",
+    "asimetria_flexion": "{mp_data.get('metrics', {}).get('asymmetry_pct', 'N/A')}%"
+  }},
   "feedback": [
-    "Sugerencia accionable 1",
-    "Sugerencia accionable 2",
-    "Sugerencia de ejercicio compensatorio"
+    "Sugerencia accionable basada en MediaPipe + Visión",
+    "Sugerencia de ejercicio compensatorio específico"
   ]
-}
+}}
 """
             from google.genai import types
             

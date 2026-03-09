@@ -9,6 +9,7 @@ const PlansView = ({ onViewExercise, activities = [] }) => {
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
     const [startDate, setStartDate] = useState('today');
+    const [displayMode, setDisplayMode] = useState('today');
 
     const fetchPlans = async () => {
         try {
@@ -82,6 +83,7 @@ const PlansView = ({ onViewExercise, activities = [] }) => {
                     <p style={{ color: 'var(--text-muted)' }}>Periodización adaptativa SOTA 2026</p>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    {/* Selectores de Inicio */}
                     <div style={{
                         display: 'flex',
                         background: 'rgba(255,255,255,0.05)',
@@ -185,148 +187,204 @@ const PlansView = ({ onViewExercise, activities = [] }) => {
                             </p>
                         </div>
 
+                        {/* Control de Visualización */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h3 style={{ fontSize: '1.1rem', margin: 0 }}>
+                                {displayMode === 'today' ? 'Enfoque de Hoy' : 'Ciclo Completo (9 días)'}
+                            </h3>
+                            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', padding: '0.2rem', borderRadius: '6px' }}>
+                                <button
+                                    onClick={() => setDisplayMode('today')}
+                                    style={{
+                                        padding: '0.3rem 0.8rem', borderRadius: '4px', border: 'none', cursor: 'pointer', fontSize: '0.75rem',
+                                        background: displayMode === 'today' ? 'rgba(255,255,255,0.1)' : 'transparent',
+                                        color: displayMode === 'today' ? 'var(--accent-blue)' : 'var(--text-muted)',
+                                        fontWeight: 700
+                                    }}
+                                >
+                                    HOY
+                                </button>
+                                <button
+                                    onClick={() => setDisplayMode('full')}
+                                    style={{
+                                        padding: '0.3rem 0.8rem', borderRadius: '4px', border: 'none', cursor: 'pointer', fontSize: '0.75rem',
+                                        background: displayMode === 'full' ? 'rgba(255,255,255,0.1)' : 'transparent',
+                                        color: displayMode === 'full' ? 'var(--accent-blue)' : 'var(--text-muted)',
+                                        fontWeight: 700
+                                    }}
+                                >
+                                    CICLO COMPLETO
+                                </button>
+                            </div>
+                        </div>
+
                         <div className="sessions-list">
-                            <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Sesiones de la Semana</h3>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
-                                {(JSON.parse(activePlan.content)).sessions.map((s, idx) => {
-                                    let realActivityStr = null;
-                                    if (s.is_completed && s.matched_date && activities.length > 0) {
-                                        const actsOnDate = activities.filter(a => a.fecha && a.fecha.startsWith(s.matched_date));
-                                        if (actsOnDate.length > 0) {
-                                            const bestMatch = actsOnDate[0];
-                                            const typeName = bestMatch.tipo || bestMatch.nombre || 'Actividad';
-                                            const dur = bestMatch.duracion_min ? `${Math.round(bestMatch.duracion_min)} min` : '';
-                                            const hr = bestMatch.fc_media ? `❤️ ${Math.round(bestMatch.fc_media)} bpm` : '';
-                                            const cals = bestMatch.calorias ? `🔥 ${Math.round(bestMatch.calorias)} kcal` : '';
-                                            const dist = bestMatch.distancia_km ? `📍 ${bestMatch.distancia_km.toFixed(1)} km` : '';
-                                            realActivityStr = `${typeName} · ${[dur, dist, hr, cals].filter(Boolean).join(' | ')}`;
+                                {(() => {
+                                    const allSessions = JSON.parse(activePlan.content).sessions;
+                                    const localDate = new Date();
+                                    const todayStr = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, '0')}-${String(localDate.getDate()).padStart(2, '0')}`;
+
+                                    let sessionsToDisplay = allSessions;
+
+                                    if (displayMode === 'today') {
+                                        // Intentamos encontrar la sesión de hoy
+                                        const todaySession = allSessions.find(s => s.date === todayStr);
+                                        if (todaySession) {
+                                            sessionsToDisplay = [todaySession];
                                         } else {
-                                            realActivityStr = 'Realizada (sin métricas sync)';
+                                            // Si no hay sesión hoy, buscamos la primera no completada a partir de hoy
+                                            const nextSession = allSessions.find(s => !s.is_completed && s.date >= todayStr);
+                                            if (nextSession) {
+                                                sessionsToDisplay = [nextSession];
+                                            } else {
+                                                // Si todo está hecho, mostramos la última
+                                                sessionsToDisplay = [allSessions[allSessions.length - 1]];
+                                            }
                                         }
                                     }
 
-                                    return (
-                                        <div
-                                            key={idx}
-                                            onClick={() => toggleSession(idx)}
-                                            style={{
-                                                background: 'rgba(255,255,255,0.03)',
-                                                padding: '1rem',
-                                                borderRadius: '8px',
-                                                border: '1px solid rgba(255,255,255,0.1)',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                                maxHeight: expandedSessions[idx] ? '400px' : '140px',
-                                                overflow: 'hidden',
-                                                position: 'relative'
-                                            }}
-                                        >
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.4rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                    <span>{new Date(s.date + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' })}</span>
-                                                    {s.is_completed && s.matched_date && s.matched_date !== s.date && (
-                                                        <span style={{ color: 'var(--accent-green)', fontStyle: 'italic' }}>
-                                                            (Hecho: {new Date(s.matched_date + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })})
-                                                        </span>
-                                                    )}
-                                                    {realActivityStr && (
-                                                        <span style={{ color: 'var(--text-main)', opacity: 0.9, backgroundColor: 'rgba(40,167,69,0.1)', padding: '2px 6px', borderRadius: '4px', display: 'inline-block' }}>
-                                                            {realActivityStr}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                    {s.is_completed && <CheckCircle2 size={16} color="var(--accent-green)" />}
-                                                    <ChevronRight size={14} style={{ transform: expandedSessions[idx] ? 'rotate(90deg)' : 'none', transition: 'transform 0.3s' }} />
-                                                </div>
-                                            </div>
-                                            <div style={{ fontWeight: 'bold', fontSize: '1rem', marginBottom: '0.2rem', color: 'var(--accent-blue)' }}>{s.type}</div>
-                                            <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{s.title}</div>
+                                    return sessionsToDisplay.map((s, idx) => {
+                                        const originalIdx = allSessions.findIndex(as => as.date === s.date);
+                                        let realActivityStr = null;
+                                        if (s.is_completed && s.matched_date && activities.length > 0) {
+                                            const actsOnDate = activities.filter(a => a.fecha && a.fecha.startsWith(s.matched_date));
+                                            if (actsOnDate.length > 0) {
+                                                const bestMatch = actsOnDate[0];
+                                                const typeName = bestMatch.tipo || bestMatch.nombre || 'Actividad';
+                                                const dur = bestMatch.duracion_min ? `${Math.round(bestMatch.duracion_min)} min` : '';
+                                                const hr = bestMatch.fc_media ? `❤️ ${Math.round(bestMatch.fc_media)} bpm` : '';
+                                                const cals = bestMatch.calorias ? `🔥 ${Math.round(bestMatch.calorias)} kcal` : '';
+                                                const dist = bestMatch.distancia_km ? `📍 ${bestMatch.distancia_km.toFixed(1)} km` : '';
+                                                realActivityStr = `${typeName} · ${[dur, dist, hr, cals].filter(Boolean).join(' | ')}`;
+                                            } else {
+                                                realActivityStr = 'Realizada (sin métricas sync)';
+                                            }
+                                        }
 
-                                            {!expandedSessions[idx] && (
-                                                <div style={{ marginTop: '0.5rem', fontSize: '0.7rem', color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                                                    <Play size={10} /> Click para ver detalle
+                                        return (
+                                            <div
+                                                key={s.date}
+                                                onClick={() => toggleSession(originalIdx)}
+                                                style={{
+                                                    background: 'rgba(255,255,255,0.03)',
+                                                    padding: '1rem',
+                                                    borderRadius: '8px',
+                                                    border: '1px solid rgba(255,255,255,0.1)',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                    maxHeight: expandedSessions[originalIdx] ? '400px' : '140px',
+                                                    overflow: 'hidden',
+                                                    position: 'relative'
+                                                }}
+                                            >
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.4rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                        <span>{new Date(s.date + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' })}</span>
+                                                        {s.is_completed && s.matched_date && s.matched_date !== s.date && (
+                                                            <span style={{ color: 'var(--accent-green)', fontStyle: 'italic' }}>
+                                                                (Hecho: {new Date(s.matched_date + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })})
+                                                            </span>
+                                                        )}
+                                                        {realActivityStr && (
+                                                            <span style={{ color: 'var(--text-main)', opacity: 0.9, backgroundColor: 'rgba(40,167,69,0.1)', padding: '2px 6px', borderRadius: '4px', display: 'inline-block' }}>
+                                                                {realActivityStr}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                        {s.is_completed && <CheckCircle2 size={16} color="var(--accent-green)" />}
+                                                        <ChevronRight size={14} style={{ transform: expandedSessions[originalIdx] ? 'rotate(90deg)' : 'none', transition: 'transform 0.3s' }} />
+                                                    </div>
                                                 </div>
-                                            )}
+                                                <div style={{ fontWeight: 'bold', fontSize: '1rem', marginBottom: '0.2rem', color: 'var(--accent-blue)' }}>{s.type}</div>
+                                                <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{s.title}</div>
 
-                                            <div style={{
-                                                marginTop: '0.8rem',
-                                                fontSize: '0.85rem',
-                                                color: '#e0e0e0',
-                                                lineHeight: '1.4',
-                                                opacity: expandedSessions[idx] ? 1 : 0,
-                                                transition: 'opacity 0.3s'
-                                            }}>
-                                                <p style={{ margin: '0 0 0.8rem 0', fontStyle: 'italic', color: 'var(--text-muted)' }}>{s.description}</p>
-
-                                                {s.workout_list && s.workout_list.length > 0 && (
-                                                    <div style={{ marginBottom: '1rem', background: 'rgba(0,0,0,0.2)', padding: '0.6rem', borderRadius: '6px' }}>
-                                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
-                                                            <thead>
-                                                                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', textAlign: 'left' }}>
-                                                                    <th style={{ padding: '0.3rem 0', color: 'var(--accent-blue)' }}>Ejercicio/Bloque</th>
-                                                                    <th style={{ padding: '0.3rem 0', textAlign: 'center' }}>S x R</th>
-                                                                    <th style={{ padding: '0.3rem 0', textAlign: 'right' }}>Detalle</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                {s.workout_list.map((item, iidx) => (
-                                                                    <tr key={iidx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                                                        <td
-                                                                            style={{
-                                                                                padding: '0.4rem 0',
-                                                                                cursor: 'pointer',
-                                                                                color: 'var(--text-main)',
-                                                                                textDecoration: 'underline decoration-dotted rgba(255,255,255,0.2)'
-                                                                            }}
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                onViewExercise(item.name);
-                                                                            }}
-                                                                            title="Ver en Biblioteca"
-                                                                        >
-                                                                            {item.name}
-                                                                        </td>
-                                                                        <td style={{ padding: '0.4rem 0', textAlign: 'center' }}>
-                                                                            {item.sets && (item.reps ? `${item.sets}x${item.reps}` : `${item.sets} sets`)}
-                                                                            {item.duration_min && `${item.duration_min} min`}
-                                                                        </td>
-                                                                        <td style={{ padding: '0.4rem 0', textAlign: 'right', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                                                            {item.intensity || '-'}
-                                                                        </td>
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
+                                                {!expandedSessions[originalIdx] && (
+                                                    <div style={{ marginTop: '0.5rem', fontSize: '0.7rem', color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                                                        <Play size={10} /> Click para ver detalle
                                                     </div>
                                                 )}
 
-                                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                                    {s.targets?.map((t, tidx) => (
-                                                        <span key={tidx} style={{
-                                                            backgroundColor: 'rgba(0,123,255,0.1)',
-                                                            color: 'var(--accent-blue)',
+                                                <div style={{
+                                                    marginTop: '0.8rem',
+                                                    fontSize: '0.85rem',
+                                                    color: '#e0e0e0',
+                                                    lineHeight: '1.4',
+                                                    opacity: expandedSessions[originalIdx] ? 1 : 0,
+                                                    transition: 'opacity 0.3s'
+                                                }}>
+                                                    <p style={{ margin: '0 0 0.8rem 0', fontStyle: 'italic', color: 'var(--text-muted)' }}>{s.description}</p>
+
+                                                    {s.workout_list && s.workout_list.length > 0 && (
+                                                        <div style={{ marginBottom: '1rem', background: 'rgba(0,0,0,0.2)', padding: '0.6rem', borderRadius: '6px' }}>
+                                                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                                                                <thead>
+                                                                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', textAlign: 'left' }}>
+                                                                        <th style={{ padding: '0.3rem 0', color: 'var(--accent-blue)' }}>Ejercicio/Bloque</th>
+                                                                        <th style={{ padding: '0.3rem 0', textAlign: 'center' }}>S x R</th>
+                                                                        <th style={{ padding: '0.3rem 0', textAlign: 'right' }}>Detalle</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {s.workout_list.map((item, iidx) => (
+                                                                        <tr key={iidx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                                            <td
+                                                                                style={{
+                                                                                    padding: '0.4rem 0',
+                                                                                    cursor: 'pointer',
+                                                                                    color: 'var(--text-main)',
+                                                                                    textDecoration: 'underline decoration-dotted rgba(255,255,255,0.2)'
+                                                                                }}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    onViewExercise(item.name);
+                                                                                }}
+                                                                                title="Ver en Biblioteca"
+                                                                            >
+                                                                                {item.name}
+                                                                            </td>
+                                                                            <td style={{ padding: '0.4rem 0', textAlign: 'center' }}>
+                                                                                {item.sets && (item.reps ? `${item.sets}x${item.reps}` : `${item.sets} sets`)}
+                                                                                {item.duration_min && `${item.duration_min} min`}
+                                                                            </td>
+                                                                            <td style={{ padding: '0.4rem 0', textAlign: 'right', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                                                                {item.intensity || '-'}
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    )}
+
+                                                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                                        {s.targets?.map((t, tidx) => (
+                                                            <span key={tidx} style={{
+                                                                backgroundColor: 'rgba(0,123,255,0.1)',
+                                                                color: 'var(--accent-blue)',
+                                                                padding: '0.1rem 0.4rem',
+                                                                borderRadius: '4px',
+                                                                fontSize: '0.75rem',
+                                                                border: '1px solid rgba(0,123,255,0.2)'
+                                                            }}>
+                                                                {t.metric_type}: {t.value}
+                                                            </span>
+                                                        ))}
+                                                        <span style={{
+                                                            backgroundColor: 'rgba(255,255,255,0.05)',
                                                             padding: '0.1rem 0.4rem',
                                                             borderRadius: '4px',
-                                                            fontSize: '0.75rem',
-                                                            border: '1px solid rgba(0,123,255,0.2)'
+                                                            fontSize: '0.75rem'
                                                         }}>
-                                                            {t.metric_type}: {t.value}
+                                                            {s.duration_min} min
                                                         </span>
-                                                    ))}
-                                                    <span style={{
-                                                        backgroundColor: 'rgba(255,255,255,0.05)',
-                                                        padding: '0.1rem 0.4rem',
-                                                        borderRadius: '4px',
-                                                        fontSize: '0.75rem'
-                                                    }}>
-                                                        {s.duration_min} min
-                                                    </span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    })
+                                })()}
                             </div>
                         </div>
                     </div>

@@ -77,7 +77,7 @@ class MultiModelClient:
         self.log_file = MODEL_FALLBACK_LOG
         self.cost_warnings_shown: set = set()  # Para no repetir advertencias de costo
         
-    def generate(self, prompt: str, system_instruction: str = "", max_tokens: int = 1000) -> str:
+    def generate(self, prompt: str, system_instruction: str = "", max_tokens: int = 1000, cached_content: str = None) -> str:
         """
         Genera respuesta intentando modelos en orden de fallback.
         
@@ -116,7 +116,7 @@ class MultiModelClient:
                 elif provider == "anthropic":
                     response = self._call_anthropic(prompt, system_instruction, model, max_tokens)
                 elif provider == "gemini":
-                    response = self._call_gemini(prompt, system_instruction, model, max_tokens)
+                    response = self._call_gemini(prompt, system_instruction, model, max_tokens, cached_content=cached_content)
                 else:
                     continue
                 
@@ -179,18 +179,23 @@ class MultiModelClient:
         
         return response.content[0].text
     
-    def _call_gemini(self, prompt: str, system_instruction: str, model: str, max_tokens: int) -> str:
+    def _call_gemini(self, prompt: str, system_instruction: str, model: str, max_tokens: int, cached_content: str = None) -> str:
         """Llama a Google Gemini via new google-genai SDK"""
         from google import genai
         from google.genai import types
         
         client = genai.Client(api_key=self.api_keys["gemini"])
         
-        config = types.GenerateContentConfig(
-            max_output_tokens=max_tokens,
-            temperature=0.7,
-            system_instruction=system_instruction
-        )
+        config_kwargs = {
+            "max_output_tokens": max_tokens,
+            "temperature": 0.7
+        }
+        if cached_content:
+            config_kwargs["cached_content"] = cached_content
+        else:
+            config_kwargs["system_instruction"] = system_instruction
+
+        config = types.GenerateContentConfig(**config_kwargs)
         
         response = client.models.generate_content(
             model=model,
@@ -200,7 +205,7 @@ class MultiModelClient:
         
         return response.text
     
-    async def generate_stream(self, prompt: str, system_instruction: str = "", max_tokens: int = 1000):
+    async def generate_stream(self, prompt: str, system_instruction: str = "", max_tokens: int = 1000, cached_content: str = None):
         """
         Genera respuesta en streaming intentando modelos en orden de fallback.
         """
@@ -238,7 +243,7 @@ class MultiModelClient:
                         yield chunk
                         success = True
                 elif provider == "gemini":
-                    async for chunk in self._call_gemini_stream(prompt, system_instruction, model, max_tokens):
+                    async for chunk in self._call_gemini_stream(prompt, system_instruction, model, max_tokens, cached_content=cached_content):
                         yield chunk
                         success = True
                 
@@ -300,7 +305,7 @@ class MultiModelClient:
             async for text in stream.text_stream:
                 yield text
 
-    async def _call_gemini_stream(self, prompt: str, system_instruction: str, model: str, max_tokens: int):
+    async def _call_gemini_stream(self, prompt: str, system_instruction: str, model: str, max_tokens: int, cached_content: str = None):
         """Llama a Gemini en modo streaming asíncrono"""
         from google import genai
         from google.genai import types
@@ -308,11 +313,16 @@ class MultiModelClient:
         # Usamos el cliente asíncrono de genai
         client = genai.Client(api_key=self.api_keys["gemini"])
         
-        config = types.GenerateContentConfig(
-            max_output_tokens=max_tokens,
-            temperature=0.7,
-            system_instruction=system_instruction
-        )
+        config_kwargs = {
+            "max_output_tokens": max_tokens,
+            "temperature": 0.7
+        }
+        if cached_content:
+            config_kwargs["cached_content"] = cached_content
+        else:
+            config_kwargs["system_instruction"] = system_instruction
+
+        config = types.GenerateContentConfig(**config_kwargs)
         
         async for chunk in await client.aio.models.generate_content_stream(
             model=model,

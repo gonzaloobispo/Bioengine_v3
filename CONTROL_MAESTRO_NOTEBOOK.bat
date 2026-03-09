@@ -1,66 +1,51 @@
 @echo off
 setlocal
-title AGENTE NOTEBOOKLM - MASTER CONTROL
+title AGENTE NOTEBOOKLM - CONTROL MAESTRO (BRIGDE VERSION)
 
-:: Simple colors using the COLOR command (Windows Native)
-:: 0 = Black, 7 = White, 9 = Light Blue, A = Green, E = Yellow, C = Red
 color 07
-
 echo.
 echo ================================================================
-echo           AGENTE NOTEBOOKLM MCP - CONTROL MAESTRO         
+echo           AGENTE NOTEBOOKLM MCP - CONTROL MAESTRO v2
 echo ================================================================
 echo.
 
-:: 1. Verificación de Entorno y Actualizaciones
-echo [+] [1/3] VERIFICANDO ACTUALIZACIONES...
-python -m pip install --upgrade notebooklm-mcp-server --quiet
+:: 1. Verificación de Servidor Sidecar
+echo [+] [1/3] VERIFICANDO MOTOR DE NAVEGACION (SIDECAR)...
+curl -s http://127.0.0.1:8000/health > nul
 if errorlevel 1 (
-    echo [!] Advertencia: No se pudo verificar actualizaciones.
-) else (
-    echo [OK] Servidor MCP al dia.
-)
-echo.
-
-:: 2. Test y Reparación de Conexión
-echo [+] [2/3] VALIDANDO CONEXION Y SEGURIDAD...
-:: Ejecutamos el agente
-python -m agente_notebooklm_mcp.agent_logic
-set RES_LOGIC=%errorlevel%
-
-if not "%RES_LOGIC%"=="0" (
     color 0C
+    echo [X] ERROR: El servidor Sidecar NO esta corriendo.
+    echo [!] Por favor, ejecuta 'START_SIDECAR.bat' antes de continuar.
     echo.
-    echo [X] ERROR CRITICO DE CONEXION:
-    echo El Agente no pudo establecer una sesion segura con NotebookLM.
-    echo [SUGERENCIA] Ejecuta 'notebooklm-mcp-auth' para renovar tu sesion.
-    goto END_BLOCK
+    pause
+    exit /b 1
 )
-
-color 0A
-echo [OK] Conexion validada y logs cifrados correctamente.
+echo [OK] Motor Sidecar detectado y activo.
 echo.
 
-:: 3. Sincronización de Datos Reales
-echo [+] [3/3] ACTUALIZANDO CUADERNOS EN EL DASHBOARD...
-python -c "from agente_notebooklm_mcp.sync_dashboard import update_dashboard_data; update_dashboard_data()"
+:: 2. Test de Comunicacion Real
+echo [+] [2/3] VALIDANDO PUENTE MCP...
+python -c "import httpx; r = httpx.post('http://127.0.0.1:8000/query', json={'notebook_id': '1f927884-ec18-45f3-82b3-f1d0415e6904', 'message': 'test health check'}, timeout=30.0); print('[OK] Respuesta recibida' if r.status_code == 200 else '[X] Error')"
 if errorlevel 1 (
     color 0E
-    echo [!] Error al sincronizar datos con el Dashboard.
+    echo [!] Advertencia: La comunicacion con el navegador es lenta o requiere login.
 ) else (
-    echo [OK] Dashboard actualizado con datos reales.
+    echo [OK] Puente operativo.
 )
 echo.
 
-:END_BLOCK
-echo ================================================================
-if "%RES_LOGIC%"=="0" (
-    echo          ESTADO FINAL: TODO OPERATIVO (SUCCESS)          
+:: 3. Sincronización de Dashboard
+echo [+] [3/3] ACTUALIZANDO DATOS DEL DASHBOARD...
+python -c "from agente_notebooklm_mcp.sync_dashboard import update_dashboard_data; update_dashboard_data()"
+if errorlevel 1 (
+    echo [!] Error al sincronizar datos.
 ) else (
-    echo          ESTADO FINAL: ERROR EN EL PROCESO (FAILED)        
+    echo [OK] Dashboard sincronizado.
 )
+
+echo.
+echo ================================================================
+echo           ESTADO FINAL: PROCESO COMPLETADO
 echo ================================================================
 echo.
-echo El Agente NotebookLM ha terminado su tarea.
 pause
-exit /b %RES_LOGIC%

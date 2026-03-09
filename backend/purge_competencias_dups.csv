@@ -1,8 +1,0 @@
-id,fecha,tipo,distancia_km,duracion_min,calorias,fc_media,fc_max,elevacion_m,cadencia_media,calzado,evento_nombre,stress_score,fuente,nombre,training_load,aerobic_te,anaerobic_te,training_effect_label,hr_zone_1,hr_zone_2,hr_zone_3,hr_zone_4,hr_zone_5
-33,2025-07-27T10:23:00,Competición Trail,0.51,3.8,32.0,,,,,Hoka Speedgoat 6,Volcano Trail,,Garmin Cloud,,,,,,,,,,
-86,2025-02-15T10:55:40,Competición Trail,1.06,22.1,81.0,,,,,Hoka Speedgoat 6,Arbolito Nocturno 2025,,Garmin Cloud,,,,,,,,,,
-122,2024-11-16T09:08:52,Competición Calle,1.93,47.2,439.0,,,,,Brooks GTS 23,San Felipe y Santiago,,Garmin Cloud,,,,,,,,,,
-128,2024-11-10T09:38:47,Competición Trail,1.19,8.6,95.0,,,,,New Balance Garoé,Desafio Pittamiglio,,Garmin Cloud,,,,,,,,,,
-143,2024-10-12T09:25:24,Competición Calle,1.44,33.4,242.0,,,,,Brooks GTS 23,5K contra el Cáncer de Mama,,Garmin Cloud,,,,,,,,,,
-181,2024-07-21T10:19:31,Competición Calle,5.0,32.5,,,,,,Brooks GTS 23,100 años del ORIENTAL DE LA PAZ,,Apple,,,,,,,,,,
-182,2024-07-21T10:00:18,Competición Calle,5.0,9.4,,,,,,Brooks GTS 23,100 años del ORIENTAL DE LA PAZ,,Apple,,,,,,,,,,

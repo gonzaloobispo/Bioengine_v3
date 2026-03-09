@@ -6,6 +6,7 @@ import sqlite3
 import os
 import json
 import time
+import logging
 from typing import List, Optional
 from pydantic import BaseModel, ValidationError
 from datetime import datetime, date
@@ -18,20 +19,39 @@ from routes import auth_routes
 
 from config import DB_PATH, ADMIN_TOKEN
 
+from services.health_service import DataHealthService
+
 app = FastAPI(title="BioEngine V3 API")
 app.include_router(auth_routes.router, prefix="/api")
 sync_service = SyncService()
 ai_service = AIService()
 hitl_service = get_hitl_service()
+health_service = DataHealthService()
 
 # Habilitar CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5174", "http://localhost:3000", "*"], # Added specific origins for safety
+    allow_origins=[
+        "http://localhost:5173", 
+        "http://127.0.0.1:5173", 
+        "http://localhost:5174", 
+        "http://127.0.0.1:5174"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Servir archivos estaticos si existen
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Configurar logging basico para el backend
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger("BioEngine")
 
 
 # Serving System Manual
@@ -206,6 +226,10 @@ def trigger_sync(_: bool = Depends(verify_admin_token)) -> dict:
         with open("debug_sync.txt", "a") as f:
             f.write(f"Garmin result: {res_garmin}\n")
             
+        res_gear = sync_service.sync_garmin_gear()
+        with open("debug_sync.txt", "a") as f:
+            f.write(f"Garmin Gear result: {res_gear}\n")
+            
         res_withings = sync_service.sync_withings()
         with open("debug_sync.txt", "a") as f:
             f.write(f"Withings result: {res_withings}\n")
@@ -215,6 +239,7 @@ def trigger_sync(_: bool = Depends(verify_admin_token)) -> dict:
         
         return {
             "garmin": res_garmin,
+            "gear": res_gear,
             "withings": res_withings
         }
     except Exception as e:
@@ -259,6 +284,74 @@ async def get_plans(db: sqlite3.Connection = Depends(get_db)):
                 print(f"Error evaluating active plan: {e}")
                 
     return plans
+
+@app.get("/plans/active")
+async def get_active_plan(db: sqlite3.Connection = Depends(get_db)):
+    """Retorna el plan de entrenamiento activo actualmente."""
+    cursor = db.execute("SELECT * FROM training_plans WHERE status = 'active' ORDER BY start_date DESC LIMIT 1")
+    row = cursor.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="No hay ningún plan activo.")
+    
+    plan = dict(row)
+    # Evaluar dinámicamente si es posible
+    try:
+        from services.context_manager import ContextManager
+        ctx = ContextManager()
+        activities = ctx.get_activity_history(days=30)
+        coach = AdaptiveCoach(athlete_profile={})
+        eval_data = coach.evaluate_performance(plan['content'], activities)
+        
+        plan_content = json.loads(plan['content'])
+        session_status = eval_data.get('session_status', [])
+        
+        for idx, session in enumerate(plan_content.get('sessions', [])):
+            if idx < len(session_status):
+                session['is_completed'] = session_status[idx].get('is_completed', False)
+                session['matched_date'] = session_status[idx].get('matched_date')
+        
+        plan['content'] = plan_content # Devuelve como objeto, no string
+    except Exception as e:
+        logger.error(f"Error evaluating active plan: {e}")
+        plan['content'] = json.loads(plan['content'])
+        
+    return plan
+
+class SessionUpdateRequest(BaseModel):
+    date: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    is_completed: Optional[bool] = None
+
+@app.patch("/plans/{plan_id}/sessions/{session_idx}")
+async def update_session(plan_id: int, session_idx: int, req: SessionUpdateRequest, db: sqlite3.Connection = Depends(get_db)):
+    """Modifica una sesión específica dentro de un plan (ej: mover de fecha)."""
+    # 1. Obtener el plan
+    plan_row = db.execute("SELECT content FROM training_plans WHERE id = ?", (plan_id,)).fetchone()
+    if not plan_row:
+        raise HTTPException(status_code=404, detail="Plan no encontrado")
+    
+    content = json.loads(plan_row['content'])
+    sessions = content.get('sessions', [])
+    
+    if session_idx < 0 or session_idx >= len(sessions):
+        raise HTTPException(status_code=400, detail="Índice de sesión inválido")
+    
+    # 2. Aplicar cambios
+    session = sessions[session_idx]
+    if req.date: session['date'] = req.date
+    if req.title: session['title'] = req.title
+    if req.description: session['description'] = req.description
+    if req.is_completed is not None: session['is_completed'] = req.is_completed
+    
+    # 3. Guardar de nuevo
+    db.execute(
+        "UPDATE training_plans SET content = ? WHERE id = ?",
+        (json.dumps(content), plan_id)
+    )
+    db.commit()
+    
+    return {"status": "success", "session": session}
 
 class PlanGenerateRequest(BaseModel):
     start_date: Optional[date] = None
@@ -348,39 +441,6 @@ async def evaluate_plan(plan_id: int, db: sqlite3.Connection = Depends(get_db)):
     
     return {"status": "success", "evaluation": evaluation}
 
-class PainLogRequest(BaseModel):
-    level: int  # 0-10
-    location: str = "Rodilla Derecha"
-    side: str = "derecha" # derecha, izquierda, ambas
-    source: str = "user_manual"
-    notes: str = ""
-
-@app.post("/pain")
-async def log_pain(req: PainLogRequest, db: sqlite3.Connection = Depends(get_db)):
-    from services.context_manager import ContextManager
-    ctx = ContextManager()
-    ctx.log_pain(
-        level=req.level, 
-        notes=req.notes, 
-        location=req.location, 
-        side=req.side, 
-        source=req.source
-    )
-    return {"status": "success", "message": f"Dolor nivel {req.level} en {req.location} ({req.side}) registrado correctamente"}
-
-@app.get("/pain/history")
-async def get_pain_history(limit: int = 10, db: sqlite3.Connection = Depends(get_db)):
-    from services.context_manager import ContextManager
-    ctx = ContextManager()
-    history = ctx.get_pain_history(limit=limit)
-    return {"status": "success", "history": history}
-
-@app.delete("/pain/{log_id}")
-async def delete_pain_log(log_id: int, db: sqlite3.Connection = Depends(get_db)):
-    cursor = db.cursor()
-    cursor.execute("DELETE FROM pain_logs WHERE id = ?", (log_id,))
-    db.commit()
-    return {"status": "success", "message": f"Registro {log_id} eliminado"}
 
 @app.get("/knowledge/{doc_id}")
 async def get_knowledge_doc(doc_id: str):
@@ -519,6 +579,7 @@ async def get_system_status(_: bool = Depends(verify_admin_token)) -> dict:
             "last_summarized": memory_stats.get("last_count", 0),
             "summary_length": len(memory_stats.get("current_summary", ""))
         },
+        "data_health": health_service.get_health_stats(),
         "version": "3.1.0-v4.2"
     }
 
@@ -748,28 +809,61 @@ def get_training_trends(db: sqlite3.Connection = Depends(get_db)):
 
 @app.post("/log/remote")
 async def remote_log(data: dict):
-    """Log messages from the frontend for debugging"""
+    """Log messages from the frontend for debugging with backend console integration"""
     log_dir = os.path.join(os.getcwd(), "log_temp")
-    if os.path.exists(log_dir):
-        with open(os.path.join(log_dir, "frontend_remote.log"), "a", encoding="utf-8") as f:
-            f.write(json.dumps({
-                "timestamp": datetime.now().isoformat(),
-                **data
-            }) + "\n")
-    return {"status": "ok"}
+    
+    # Asegurar que el directorio existe
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+        
+    level = data.get("level", "info").lower()
+    message = data.get("message", "No message")
+    extra = data.get("data", {})
+    
+    # Registrar en el archivo físico
+    log_entry = {
+        "timestamp": datetime.now().isoformat(),
+        "level": level,
+        "message": message,
+        "details": extra
+    }
+    
+    with open(os.path.join(log_dir, "frontend_remote.log"), "a", encoding="utf-8") as f:
+        f.write(json.dumps(log_entry) + "\n")
+        
+    # Integrar con el logger del sistema (visibilidad en terminal)
+    log_msg = f"[FRONTEND] {level.upper()} - {message} - {json.dumps(extra)}"
+    if level == "error":
+        logger.error(log_msg)
+    elif level == "warning":
+        logger.warning(log_msg)
+    else:
+        logger.info(log_msg)
+        
+    return {"status": "logged"}
 
 @app.post("/analyze/video")
-async def analyze_video(video: UploadFile = File(...)):
-    """Recibe un video del frontend y usa Gemini Vision para análisis biomecánico."""
+async def analyze_video(video: UploadFile = File(...), mode: str = "standard"):
+    """
+    Recibe un video del frontend y usa Gemini Vision para análisis biomecánico.
+    Soporta modo 'standard' (Vision pura) y 'hybrid' (OpenCV + MediaPipe + Clinical Reasoning).
+    """
     temp_path = f"temp_{video.filename}"
     try:
         with open(temp_path, "wb") as buffer:
             buffer.write(await video.read())
         
-        # Llamar al servicio AI
-        result = await ai_service.analyze_video_technique(temp_path)
+        if mode == "hybrid":
+            # Obtener contexto para razonamiento clínico
+            user_profile = context_manager.get_foundational_context().get("perfil_usuario", {})
+            result = await ai_service.analyze_biomechanics_hybrid(temp_path, user_profile)
+        else:
+            # Llamar al servicio AI estándar (Vision pura)
+            result = await ai_service.analyze_video_technique(temp_path)
+            
         return result
     except Exception as e:
+        logger.error(f"Error en endpoint analyze_video: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error en análisis de video: {str(e)}")
     finally:
         if os.path.exists(temp_path):
@@ -780,4 +874,4 @@ async def analyze_video(video: UploadFile = File(...)):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    uvicorn.run(app, host="127.0.0.1", port=8001)

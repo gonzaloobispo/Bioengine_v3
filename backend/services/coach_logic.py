@@ -295,73 +295,71 @@ class AdaptiveCoach:
             rationale = f"Fase Dinámica (Hipertrofia): PROGRESIÓN. Desarrollo muscular mediante fuerza y cardiovascular en ciclismo."
 
         sessions_source = previous_plan.get('sessions', []) if previous_plan else []
+        plan_days = 9 # Cambiar a ciclo de 9 días
         
-        # Si no hay sesiones previas, generar una semana base según estado
-        if not sessions_source:
-             for i in range(7):
-                d = base_date + timedelta(days=i)
-                # En fase actual (desarrollo masa muscular), la bici se reserva para el fin de semana salvo pedido expreso
-                is_weekend = d.weekday() in [5, 6]
-                if state == "rehabilitacion":
-                    stype = SessionType.BIKE if is_weekend else SessionType.STRENGTH
-                    title = "Rehabilitación Rodilla (Finde)" if is_weekend else "Fortalecimiento Isométrico"
-                else:
-                    stype = SessionType.BIKE if is_weekend else SessionType.STRENGTH
-                    title = "Ciclismo Aeróbico Base" if is_weekend else f"Entrenamiento Fuerza {state.capitalize()}"
-
-                new_sessions.append(TrainingSession(
-                    date=d,
-                    type=stype,
-                    title=title,
-                    description=rationale,
-                    duration_min=30 if state == "rehabilitacion" else 45,
-                    targets=[TargetMetric(metric_type=MetricType.HR_ZONE, value="Zona 1-2")],
-                    workout_list=self._get_alternating_workout(stype, i)
-                ))
-        else:
-            # Adaptar sesiones previas al nuevo estado pero forzando la regla de fines de semana
-            for i, s in enumerate(sessions_source):
-                s_date = base_date + timedelta(days=i)
-                
-                # REGLA OBLIGATORIA: Ciclismo sábado y domingo, pesas en la semana
-                is_weekend = s_date.weekday() in [5, 6]
-                if is_weekend:
+        # Patrón base de 9 días: 
+        # 0: Fuerza, 1: Fuerza, 2: Ciclismo/Cardio, 3: Descanso, 4: Fuerza, 5: Fuerza, 6: Ciclismo/Cardio, 7: Descanso, 8: Movilidad
+        
+        # Generar sesiones desde cero o adaptar previas
+        for i in range(plan_days):
+            d = base_date + timedelta(days=i)
+            day_in_cycle = i % 9
+            is_weekend = d.weekday() in [5, 6]
+            
+            # REGLA OBLIGATORIA: Ciclismo sábado y domingo (Bici siempre los fines de semana)
+            if is_weekend:
+                s_type = SessionType.BIKE
+                title = "Ciclismo de fin de semana (Fijo)"
+                desc = "Cardio sin impacto reservado estrictamente para sábados y domingos."
+                duration = 60
+            else:
+                # Asignación por default del ciclo de 9 días (lunes a viernes)
+                if day_in_cycle in [3, 7]:
+                    s_type = SessionType.RECOVERY
+                    title = "Descanso Pasivo"
+                    desc = "Recuperación de tendones biológica recomendada por AI Coach."
+                    duration = 0
+                elif day_in_cycle == 8:
+                    s_type = SessionType.MOBILITY
+                    title = "Sesión de Movilidad y Core"
+                    desc = "Estabilización y preparación para el siguiente ciclo."
+                    duration = 30
+                elif day_in_cycle in [2, 6]:
                     s_type = SessionType.BIKE
-                    desc = "Ciclismo de fin de semana (Regla fija)"
+                    title = "Ciclismo Aeróbico Base Z2"
+                    desc = "Cardio sin impacto asfáltico para capacidad aeróbica."
+                    duration = 45
                 else:
                     s_type = SessionType.STRENGTH
-                    desc = f"Entrenamiento Fuerza {state.capitalize()} (Regla de semana)"
+                    title = f"Entrenamiento Fuerza {state.capitalize()}"
+                    desc = "Sobrecarga progresiva para hipertrofia y fortalecimiento estabilizador."
+                    duration = 45
                 
-                # Regla de Rehabilitación Severa
-                if state == "rehabilitacion" or current_status.get("clinical_lock"):
-                    if s_type == SessionType.BIKE and current_status["current_pain"] > 5:
-                        s_type = SessionType.SWIM
-                        desc = "BLOQUEO CLÍNICO: Dolor agudo. Sustitución a Natación."
-                
-                new_sessions.append(TrainingSession(
-                    date=s_date,
-                    type=s_type,
-                    title=f"Ajuste {state.capitalize()}: {s_type.value}",
-                    description=desc,
-                    duration_min=s.get('duration_min', 40),
-                    targets=s.get('targets', []),
-                    workout_list=self._get_alternating_workout(s_type, i)
-                ))
+            # Regla de Rehabilitación Severa
+            if state == "rehabilitacion" or current_status.get("clinical_lock"):
+                if s_type == SessionType.BIKE and current_status.get("current_pain", 0) > 5:
+                    s_type = SessionType.SWIM
+                    desc = "BLOQUEO CLÍNICO: Dolor agudo. Sustitución a Natación."
+                elif s_type == SessionType.STRENGTH:
+                    title = "Rehabilitación y Fortalecimiento Isométrico"
+                    desc = "Fase Clínica: Prioridad en curación de tejidos."
+                    duration = 30
+            
+            new_sessions.append(TrainingSession(
+                date=d,
+                type=s_type,
+                title=title,
+                description=desc,
+                duration_min=duration,
+                targets=[TargetMetric(metric_type=MetricType.HR_ZONE, value="Zona 1-2")] if s_type != SessionType.RECOVERY else [],
+                workout_list=self._get_alternating_workout(s_type, i) if s_type != SessionType.RECOVERY else []
+            ))
 
         return AdaptivePlan(
             plan_id=f"plan_{state}_{base_date.strftime('%Y%m%d')}",
             start_date=base_date,
-            end_date=base_date + timedelta(days=7),
+            end_date=base_date + timedelta(days=plan_days),
             sessions=new_sessions,
             coach_rationale=rationale,
             risk_level="high" if state == "rehabilitacion" else "medium" if state == "estabilizacion" else "nominal"
-        )
-
-        return AdaptivePlan(
-            plan_id=f"plan_{base_date.strftime('%Y%m%d')}",
-            start_date=base_date,
-            end_date=base_date + timedelta(days=7),
-            sessions=new_sessions,
-            coach_rationale=rationale,
-            risk_level="high" if current_status["knee_alert"] else "nominal"
         )

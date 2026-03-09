@@ -34,17 +34,10 @@ const NutritionView = ({ nutrition, biometrics, weight, showToast }) => {
             .filter(item => item && typeof item === 'object' && item.date);
     }, [nutrition]);
 
-    const [mounted, setMounted] = useState(false);
-
     React.useEffect(() => {
-        setMounted(true);
-        // Pequeño delay para asegurar que el contenedor tiene dimensiones antes de renderizar Recharts
-        const timer = setTimeout(() => setChartReady(true), 100);
+        const timer = setTimeout(() => setChartReady(true), 1000);
         return () => clearTimeout(timer);
     }, []);
-
-    if (!mounted) return <div style={{ padding: '2rem', color: 'white' }
-    } > Inicializando panel...</div >;
 
     return (
         <div className="nutrition-view">
@@ -86,9 +79,9 @@ const NutritionView = ({ nutrition, biometrics, weight, showToast }) => {
                             </div>
                         </div>
                     </div>
-                    <div style={{ height: '300px', width: '100%', position: 'relative', padding: '1rem' }}>
+                    <div style={{ height: '300px', minHeight: '300px', width: '100%', position: 'relative', padding: '1rem' }}>
                         {chartReady && chartData && chartData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={280}>
+                            <ResponsiveContainer width="100%" height={280} debounce={100} minWidth={100} minHeight={100}>
                                 <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="colorProtein" x1="0" y1="0" x2="0" y2="1">
@@ -154,8 +147,8 @@ const NutritionView = ({ nutrition, biometrics, weight, showToast }) => {
                         </div>
                     </div>
                     <div style={{ height: '300px', padding: '1rem' }}>
-                        {chartData && chartData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
+                        {chartReady && chartData && chartData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%" debounce={100} minWidth={100} minHeight={100}>
                                 <AreaChart data={chartData}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                                     <XAxis
@@ -175,7 +168,7 @@ const NutritionView = ({ nutrition, biometrics, weight, showToast }) => {
                             </ResponsiveContainer>
                         ) : (
                             <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                                Insuficientes datos para gráfica evolutiva.
+                                {chartReady ? "Insuficientes datos para gráfica evolutiva." : "Cargando visualización..."}
                             </div>
                         )}
                     </div>

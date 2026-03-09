@@ -7,6 +7,7 @@ import time
 from .training_db_server import mcp as db_mcp
 from .context_server import mcp as context_mcp
 from .biometrics_server import mcp as bio_mcp
+from .notebooklm_external_bridge import mcp as nblm_mcp
 
 class MCPClient:
     """
@@ -18,7 +19,8 @@ class MCPClient:
         self.servers = {
             "db": db_mcp,
             "context": context_mcp,
-            "biometrics": bio_mcp
+            "biometrics": bio_mcp,
+            "nblm": nblm_mcp
         }
         self._context_cache = None
         self._last_cache_time = 0
@@ -28,13 +30,7 @@ class MCPClient:
         """Lee un recurso de un servidor MCP basado en su URI."""
         prefix = uri.split("://")[0]
         
-        server_key_map = {
-            "db": "db",
-            "context": "context",
-            "biometrics": "biometrics"
-        }
-        
-        server_key = server_key_map.get(prefix)
+        server_key = prefix
         if not server_key:
             raise ValueError(f"Protocolo MCP no soportado: {prefix}")
             

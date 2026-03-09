@@ -1,21 +1,28 @@
 
-# Agente NotebookLM MCP 🤖
+# 🧠 Base de Conocimiento - Agente NotebookLM MCP
 
-Este agente es el responsable de la salud, seguridad y actualización de la conexión entre tus aplicaciones y Google NotebookLM.
+Este documento contiene la información técnica crítica extraída de la investigación en el cuaderno `80b773c1-e174-4ee4-92d9-246dffe5e848` para solucionar la conexión desde cualquier proyecto.
 
-## Capacidades:
-1.  **Vigilancia de Versiones**: Busca y actualiza automáticamente el servidor MCP a la última versión disponible.
-2.  **Autodiagnóstico y Reparación**: Prueba la conexión y limpia procesos bloqueados si detecta fallos.
-3.  **Seguridad Cifrada**: Mantiene un registro de todos los intentos de login y estados de conexión cifrados con Fernet (AES-128).
-4.  **Soporte Multi-App**: Diseñado para servir como base de datos o motor de IA para cualquier desarrollo externo (como tu Dashboard).
+## 🛠️ Arquitectura de Solución: Bridge-Sidecar
+Para evitar bloqueos y fallos de sesión, se utiliza una arquitectura dividida:
+1. **Sidecar (Motor de Navegación)**: Servidor FastAPI + Selenium (undetected-chromedriver) que mantiene una sesión de Chrome abierta.
+2. **Bridge (Puente MCP)**: Script ligero que Antigravity llama y que se comunica vía HTTP con el Sidecar.
 
-## Estructura del Agente:
-- `agent_logic.py`: Orquestador principal.
-- `encryption_utils.py`: Gestión de seguridad y cifrado.
-- `connection_tester.py`: Motor de pruebas y corrección.
+## 🔍 Selectores CSS Actualizados (2026)
+*   **Chat Input**: `textarea.query-box-input`
+*   **Botón Enviar**: `//button[descendant::mat-icon[text()='arrow_forward']]` (XPath)
+*   **Respuesta IA**: `.model-response-text` o `.chat-panel-content .response-block`
 
-## Cómo ejecutar mantenimiento manually:
-Ejecuta: `python -m agente_notebooklm_mcp.agent_logic` desde la raíz.
+## ⚠️ Problemas Comunes y Soluciones
+| Problema | Causa | Solución |
+| :--- | :--- | :--- |
+| **JSON-RPC Error** | Logs en stdout | Redirigir logs a un archivo o usar el Bridge. |
+| **New Tab / Error 404** | Navegación fallida | El Sidecar fuerza `driver.get(url)` si el ID no está en la URL. |
+| **Session Expired** | Google Logout | El Sidecar corre con el perfil `chrome_profile_notebooklm`. Login manual en esa ventana. |
+| **Port 8000 Conflict** | Otro servicio | Cambiar puerto en `sidecar_server.py` y `mcp_bridge.py`. |
 
----
-*Desarrollado por Antigravity para optimizar el ecosistema BioEngine.*
+## 🚀 Cómo Restaurar en un Nuevo Proyecto
+1. Copiar la carpeta `agente_notebooklm_mcp` al nuevo proyecto.
+2. Asegurar que `START_SIDECAR.bat` apunta a la ruta absoluta del script.
+3. Actualizar `claude_desktop_config.json` para que llame al `mcp_bridge.py` del nuevo directorio.
+4. Ejecutar `/agente-notebooklm-mcp` para auto-reparar.

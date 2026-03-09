@@ -43,9 +43,6 @@ Hemos completado con éxito la fase de **"Hardening de Arquitectura"**. El siste
 *   **Context Caching**: Implementar caché de contexto en Gemini para los PDFs de fisioterapia y metodología.
 *   **Gait Analysis 2.0**: Migrar de detección de ángulos base a análisis de vectores de fuerza proyectados.
 
-### 3. Conectividad
-*   **ImportFlow Bridge**: Vincular las fechas de llegada de envíos (importaciones) con los días de descanso/viaje en el calendario de entrenamiento.
-
 ---
 
 ## 📈 Conclusión de Salud del Proyecto

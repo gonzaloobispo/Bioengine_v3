@@ -11,6 +11,7 @@ const AnalyzerView = () => {
     const [analyzing, setAnalyzing] = useState(false);
     const [result, setResult] = useState(null);
     const [dragActive, setDragActive] = useState(false);
+    const [analysisMode, setAnalysisMode] = useState('standard'); // 'standard' or 'hybrid'
     const inputRef = useRef(null);
 
     const handleDrag = (e) => {
@@ -66,8 +67,8 @@ const AnalyzerView = () => {
         formData.append('video', file);
 
         try {
-            // Llamada real al backend
-            const response = await axios.post(`${API_BASE}/analyze/video`, formData, {
+            // Llamada real al backend con el modo seleccionado
+            const response = await axios.post(`${API_BASE}/analyze/video?mode=${analysisMode}`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }
@@ -196,15 +197,37 @@ const AnalyzerView = () => {
                     </AnimatePresence>
 
                     {previewUrl && !result && !analyzing && !uploading && (
-                        <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={handleAnalyze}
-                            className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl font-bold text-lg shadow-lg shadow-blue-900/40 flex items-center justify-center gap-3 transition-all"
-                        >
-                            <Activity className="animate-pulse" />
-                            ANALIZAR BIOMECÁNICA
-                        </motion.button>
+                        <div className="flex flex-col gap-4">
+                            {/* Selector de Modo */}
+                            <div className="flex bg-gray-900/50 p-1 rounded-xl border border-gray-700">
+                                <button
+                                    onClick={() => setAnalysisMode('standard')}
+                                    className={`flex-1 py-2 px-4 rounded-lg text-sm font-semibold transition-all ${analysisMode === 'standard' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}
+                                >
+                                    Mode Standard
+                                </button>
+                                <button
+                                    onClick={() => setAnalysisMode('hybrid')}
+                                    className={`flex-1 py-2 px-4 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 ${analysisMode === 'hybrid' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}
+                                >
+                                    <Zap size={14} className={analysisMode === 'hybrid' ? 'text-yellow-400' : ''} />
+                                    Hybrid SOTA
+                                </button>
+                            </div>
+
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={handleAnalyze}
+                                className={`w-full py-4 bg-gradient-to-r text-white rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-3 transition-all ${analysisMode === 'hybrid'
+                                    ? 'from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-indigo-900/40'
+                                    : 'from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-blue-900/40'
+                                    }`}
+                            >
+                                <Activity className="animate-pulse" />
+                                {analysisMode === 'hybrid' ? 'INICIAR ANÁLISIS HÍBRIDO' : 'ANALIZAR BIOMECÁNICA'}
+                            </motion.button>
+                        </div>
                     )}
                 </div>
 
@@ -236,15 +259,31 @@ const AnalyzerView = () => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="bg-gray-900/50 p-4 rounded-xl border border-gray-800">
                                     <div className="text-gray-400 text-xs uppercase mb-1">Cadencia Visual</div>
-                                    <div className="text-2xl font-bold text-white">{result.metrics.cadencia_visual} <span className="text-sm text-gray-500 font-normal">spm</span></div>
+                                    <div className="text-2xl font-bold text-white">
+                                        {result.metrics.cadencia_visual || result.metrics.cadence_est_spm} <span className="text-sm text-gray-500 font-normal">spm</span>
+                                    </div>
                                 </div>
                                 <div className="bg-gray-900/50 p-4 rounded-xl border border-gray-800">
                                     <div className="text-gray-400 text-xs uppercase mb-1">Valgo Rodilla</div>
                                     <div className="text-xl font-bold text-red-400 flex items-center gap-2">
                                         <AlertTriangle size={16} />
-                                        {result.metrics.valgo_rodilla}
+                                        {result.metrics.valgo_rodilla || (result.metrics.dynamic_valgus_detected !== undefined ? (result.metrics.dynamic_valgus_detected ? 'Detectado' : 'Estable') : 'N/A')}
                                     </div>
                                 </div>
+
+                                {/* Métricas Extra Modo Híbrido */}
+                                {result.metrics.projected_grf_score !== undefined && (
+                                    <>
+                                        <div className="bg-indigo-900/20 p-4 rounded-xl border border-indigo-500/30">
+                                            <div className="text-indigo-400 text-xs uppercase mb-1 font-bold">Projected GRF</div>
+                                            <div className="text-2xl font-bold text-white">{result.metrics.projected_grf_score}</div>
+                                        </div>
+                                        <div className="bg-indigo-900/20 p-4 rounded-xl border border-indigo-500/30">
+                                            <div className="text-indigo-400 text-xs uppercase mb-1 font-bold">Power Efficiency</div>
+                                            <div className="text-2xl font-bold text-white">{result.metrics.power_stroke_efficiency_pct}%</div>
+                                        </div>
+                                    </>
+                                )}
                             </div>
 
                             {/* Detailed Feedback */}

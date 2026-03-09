@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, ComposedChart } from 'recharts';
 import { TrendingUp, Activity, Zap } from 'lucide-react';
 import axios from 'axios';
+import { API_BASE } from '../../config';
 
 const TrainingTrends = () => {
     const [data, setData] = useState([]);
@@ -10,19 +11,13 @@ const TrainingTrends = () => {
     const [chartReady, setChartReady] = useState(false);
 
     useEffect(() => {
-        // Soft boot for charts - wait for container layout
-        const timer = setTimeout(() => {
-            setChartReady(true);
-        }, 300); // 300ms delay to ensure DOM is ready
-        return () => clearTimeout(timer);
-    }, []);
-
-    useEffect(() => {
         const fetchTrends = async () => {
             try {
-                const response = await axios.get('http://localhost:8001/kpis/trends');
+                const response = await axios.get(`${API_BASE}/kpis/trends`);
                 setData(response.data);
                 setLoading(false);
+                // Retrasar chartReady hasta que los datos estén y el layout se asiente
+                setTimeout(() => setChartReady(true), 1000); // Aumentado a 1000ms para mayor estabilidad
             } catch (error) {
                 console.error('Error fetching trends:', error);
                 setLoading(false);
@@ -56,7 +51,7 @@ const TrainingTrends = () => {
                     </div>
                     <div style={{ height: '300px', width: '100%', position: 'relative' }}>
                         {chartReady ? (
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height="100%" debounce={100} minWidth={100} minHeight={100}>
                                 <ComposedChart data={formattedData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff10" />
                                     <XAxis
@@ -127,7 +122,7 @@ const TrainingTrends = () => {
                     </div>
                     <div style={{ height: '300px', width: '100%', position: 'relative' }}>
                         {chartReady ? (
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height="100%" debounce={100} minWidth={100} minHeight={100}>
                                 <AreaChart data={formattedData}>
                                     <defs>
                                         <linearGradient id="colorEff" x1="0" y1="0" x2="0" y2="1">
@@ -185,9 +180,9 @@ const TrainingTrends = () => {
                     </div>
                     <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'var(--text-main)', margin: 0 }}>Correlación Carga (ACWR) vs Dolor</h3>
                 </div>
-                <div style={{ height: '300px', width: '100%', position: 'relative' }}>
-                    {chartReady ? (
-                        <ResponsiveContainer width="100%" height="100%">
+                <div style={{ height: '300px', minHeight: '300px', width: '100%', position: 'relative' }}>
+                    {chartReady && formattedData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%" debounce={100} minWidth={100} minHeight={100}>
                             <ComposedChart data={formattedData}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff10" />
                                 <XAxis

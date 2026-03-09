@@ -15,43 +15,37 @@ Para entender la visión técnica, las misiones ejecutadas y el estado actual de
 
 ---
 
-## 🚀 Características Clave
+## 🚀 Inicio Rápido
 
-- **🧠 Cerebro Vivo (NotebookLM):** Integración profunda con tu base de conocimientos (fisioterapia, planes, técnica).
-- **🌊 Streaming Chat (SSE):** Respuestas instantáneas y fluidas del AI Coach.
-- **🛹 Dashboard de Sistema:** Panel de control de agentes, costes y salud semántica.
-- **🫀 Skills Clínicas:** Módulos especializados en Biomecánica, Nutrición y Emergencia.
-- **🛡️ Datos Blindados:** Validación estricta con Pydantic para garantizar la integridad física y digital.
-
----
-
-## 🛠️ Inicio Rápido
-
-Para iniciar todo el ecosistema (Frontend + Backend):
+Para iniciar el ecosistema híbrido (Frontend V3 + Engine V4):
 
 ```powershell
-.\run_bioengine.bat
+.\LAUNCH_BIOENGINE.bat
 ```
 
-> **Nota:** Asegúrate de tener configurado tu `.env` con las API Keys de Gemini.
+> **Nota:** Este lanzador asegura que los procesos previos se limpien y utiliza la configuración local de `c:\BioEngine_V3`.
 
 ---
 
-## 📂 Navegación del Proyecto
+## 📂 Estado del Proyecto (Consolidado)
+
+Este repositorio ha sido restaurado a un estado **Híbrido Estable**:
+- **UI:** Interfaz BioEngine V3 original (Restaurada).
+- **Engine:** Lógica de Backend V4 (Agente-Céntrica, con soporte de video y razonamiento clínico).
+- **Estructura:** Modular (Componentes separados en `frontend/src/components/dashboard`).
 
 | Sección | Descripción | Enlace |
 | :--- | :--- | :--- |
 | **Documentación** | Índice Maestro y Plan 2026 | [docs/README.md](./docs/README.md) |
-| **Arquitectura** | Detalle de Agentes y Skills | [BIOENGINE_AGENTAL_V1.md](./docs/BIOENGINE_AGENTAL_V1.md) |
 | **Backend** | FastAPI, SQLite & AI Logic | [backend/](./backend/) |
-| **Frontend** | React, Dashboard & Streaming | [frontend/](./frontend/) |
-| **Agentes** | Definición de Habilidades | [agent/skills/](./agent/skills/) |
+| **Frontend** | React V3 + Dashboard Modular | [frontend/](./frontend/) |
+| **Maintenance** | Scripts de utilidad | [scripts/](./scripts/) |
 
 ---
 
 ## 🧪 Control de Calidad
 
-El sistema incluye una suite de pruebas automatizadas para garantizar la estabilidad:
+El sistema utiliza validación estricta con Pydantic y un sistema de "Safety Lock" clínico.
 
 ```powershell
 # Ejecutar tests de validación y API
@@ -62,4 +56,4 @@ $env:PYTHONPATH=".;./backend"; pytest
 
 ## 📜 Licencia
 
-Desarrollado con ❤️ por el equipo de BioEngine. Bajo licencia MIT.
+Desarrollado con ❤️ por el equipo de BioEngine & Antigravity. Bajo licencia MIT.
