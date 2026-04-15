@@ -1,0 +1,81 @@
+************* Module main
+backend/main.py:1:0: E0401: Unable to import 'fastapi' (import-error)
+backend/main.py:2:0: E0401: Unable to import 'fastapi.responses' (import-error)
+backend/main.py:3:0: E0401: Unable to import 'fastapi.middleware.cors' (import-error)
+backend/main.py:9:0: E0401: Unable to import 'pydantic' (import-error)
+backend/main.py:139:17: E1101: Instance of 'ContextManager' has no 'get_biometrics_history' member (no-member)
+backend/main.py:140:15: E1123: Unexpected keyword argument 'days' in method call (unexpected-keyword-arg)
+backend/main.py:245:39: E0602: Undefined variable 'enabled' (undefined-variable)
+backend/main.py:355:4: E0401: Unable to import 'uvicorn' (import-error)
+************* Module reauth_withings
+backend/reauth_withings.py:8:0: E0401: Unable to import 'requests' (import-error)
+backend/reauth_withings.py:102:36: E1136: Value 'code' is unsubscriptable (unsubscriptable-object)
+************* Module config
+backend/config.py:3:0: E0401: Unable to import 'dotenv' (import-error)
+************* Module read_carreras
+backend/read_carreras.py:1:0: E0401: Unable to import 'pandas' (import-error)
+************* Module sync_competitions
+backend/sync_competitions.py:2:0: E0401: Unable to import 'pandas' (import-error)
+************* Module services.sync_service
+backend/services/sync_service.py:4:0: E0401: Unable to import 'requests' (import-error)
+backend/services/sync_service.py:5:0: E0401: Unable to import 'garminconnect' (import-error)
+************* Module services.multi_model_client
+backend/services/multi_model_client.py:184:8: E0401: Unable to import 'google' (import-error)
+backend/services/multi_model_client.py:185:8: E0401: Unable to import 'google.genai' (import-error)
+backend/services/multi_model_client.py:305:8: E0401: Unable to import 'google' (import-error)
+backend/services/multi_model_client.py:306:8: E0401: Unable to import 'google.genai' (import-error)
+************* Module services.biomechanics_pipeline
+backend/services/biomechanics_pipeline.py:1:0: E0401: Unable to import 'cv2' (import-error)
+backend/services/biomechanics_pipeline.py:4:0: E0401: Unable to import 'numpy' (import-error)
+************* Module services.ai_service
+backend/services/ai_service.py:9:0: E0401: Unable to import 'google' (import-error)
+backend/services/ai_service.py:10:0: E0401: Unable to import 'google.genai' (import-error)
+backend/services/ai_service.py:18:0: E0401: Unable to import 'pydantic' (import-error)
+backend/services/ai_service.py:394:33: E1101: Instance of 'AIService' has no '_semantic_refresh_every' member (no-member)
+backend/services/ai_service.py:481:33: E1101: Instance of 'AIService' has no '_semantic_refresh_every' member (no-member)
+backend/services/ai_service.py:891:28: E1101: Instance of 'AIService' has no 'vision_pipeline' member (no-member)
+************* Module services.hitl_service
+backend/services/hitl_service.py:14:0: E0401: Unable to import 'pydantic' (import-error)
+************* Module services.agents.base_agent
+backend/services/agents/base_agent.py:4:0: E0401: Unable to import 'pydantic' (import-error)
+************* Module services.mcp.training_db_server
+backend/services/mcp/training_db_server.py:3:0: E0401: Unable to import 'mcp.server.fastmcp' (import-error)
+************* Module services.mcp.biometrics_server
+backend/services/mcp/biometrics_server.py:2:0: E0401: Unable to import 'mcp.server.fastmcp' (import-error)
+************* Module services.mcp.context_server
+backend/services/mcp/context_server.py:2:0: E0401: Unable to import 'mcp.server.fastmcp' (import-error)
+************* Module core.agent_tools
+backend/core/agent_tools.py:1:0: E0401: Unable to import 'requests' (import-error)
+************* Module models.schemas
+backend/models/schemas.py:1:0: E0401: Unable to import 'pydantic' (import-error)
+backend/models/schemas.py:25:4: E0213: Method 'normalize_type' should have "self" as first argument (no-self-argument)
+************* Module models.schemas_biomecanica
+backend/models/schemas_biomecanica.py:6:0: E0401: Unable to import 'pydantic' (import-error)
+************* Module models.training_schema
+backend/models/training_schema.py:1:0: E0401: Unable to import 'pydantic' (import-error)
+************* Module tests.verify_hybrid_pipeline
+backend/tests/verify_hybrid_pipeline.py:47:4: E1101: Instance of 'AIService' has no 'vision_pipeline' member (no-member)
+************* Module tests.test_single_model
+backend/tests/test_single_model.py:3:0: E0401: Unable to import 'google' (import-error)
+backend/tests/test_single_model.py:18:4: E0401: Unable to import 'dotenv' (import-error)
+************* Module tests.test_openai_final
+backend/tests/test_openai_final.py:3:0: E0401: Unable to import 'openai' (import-error)
+************* Module tests.test_api
+backend/tests/test_api.py:1:0: E0401: Unable to import 'pytest' (import-error)
+backend/tests/test_api.py:2:0: E0401: Unable to import 'fastapi.testclient' (import-error)
+************* Module tests.test_openai
+backend/tests/test_openai.py:3:0: E0401: Unable to import 'openai' (import-error)
+backend/tests/test_openai.py:17:4: E0401: Unable to import 'dotenv' (import-error)
+************* Module tests.list_gemini_models
+backend/tests/list_gemini_models.py:4:0: E0401: Unable to import 'google' (import-error)
+backend/tests/list_gemini_models.py:35:4: E0401: Unable to import 'dotenv' (import-error)
+************* Module tests.test_mission_v3
+backend/tests/test_mission_v3.py:4:0: E0401: Unable to import 'google' (import-error)
+************* Module tests.test_gemini_models
+backend/tests/test_gemini_models.py:4:0: E0401: Unable to import 'google' (import-error)
+backend/tests/test_gemini_models.py:21:4: E0401: Unable to import 'dotenv' (import-error)
+************* Module tests.test_clinical_logic
+backend/tests/test_clinical_logic.py:4:0: E0401: Unable to import 'pydantic' (import-error)
+
+-----------------------------------
+Your code has been rated at 9.07/10
