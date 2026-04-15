@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { AnimatePresence } from 'framer-motion';
 import { X, Send, Brain } from 'lucide-react';
 
