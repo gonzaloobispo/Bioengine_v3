@@ -28,7 +28,7 @@ def sync_competitions():
                 'date': date_str,
                 'name': str(row['Carrera']).strip()
             })
-        except:
+        except Exception as e:
             continue
 
     print(f"Found {len(competitions)} competitions in Excel.")

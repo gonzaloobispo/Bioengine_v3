@@ -110,10 +110,11 @@ class AdaptiveCoach:
             # Lógica de Adaptación
             if current_status["knee_alert"]:
                 rationale = f"Ajuste por dolor (Nivel {current_status['current_pain']}): Sustituyendo impacto por protección articular."
-                sessions_raw = previous_plan.get('sessions', [])
+                sessions_raw = previous_plan.sessions if hasattr(previous_plan, 'sessions') else previous_plan.get('sessions', []) if isinstance(previous_plan, dict) else []
                 for s in sessions_raw:
-                    s_date = date.fromisoformat(s['date']) if isinstance(s['date'], str) else s['date']
-                    s_type = SessionType(s['type'])
+                    s_dict = s.dict() if hasattr(s, 'dict') else s
+                    s_date = date.fromisoformat(s_dict['date']) if isinstance(s_dict['date'], str) else s_dict['date']
+                    s_type = SessionType(s_dict['type'])
                     if s_type in [SessionType.RUNNING, SessionType.TENNIS]:
                         s_type = SessionType.BIKE if current_status["current_pain"] < 5 else SessionType.SWIM
                     
@@ -122,14 +123,14 @@ class AdaptiveCoach:
                         type=s_type,
                         title=f"Protección: {s_type.value}",
                         description="Ajuste automático para evitar estrés en rodilla.",
-                        duration_min=s.get('duration_min', 40),
+                        duration_min=s_dict.get('duration_min', 40),
                         targets=[TargetMetric(metric_type=MetricType.HR_ZONE, value="Zona 1-2")]
                     ))
             else:
                 rationale = "Continuando progresión nominal. Buena estabilidad biomecánica detectada."
                 # ... lógica de copia simple ...
-                for s in previous_plan.get('sessions', []):
-                    new_sessions.append(TrainingSession(**s))
+                for s in previous_plan.sessions if hasattr(previous_plan, 'sessions') else previous_plan.get('sessions', []) if isinstance(previous_plan, dict) else []:
+                    new_sessions.append(TrainingSession(**(s.dict() if hasattr(s, "dict") else s)))
 
         return AdaptivePlan(
             plan_id=f"plan_{date.today().strftime('%Y%m%d')}",

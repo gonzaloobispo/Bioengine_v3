@@ -48,6 +48,8 @@ class AIService:
         self._analysis_cache = {"timestamp": 0, "content": None}
         self._lock = None
         self._message_count = 0
+        self._semantic_refresh_every = 10
+        self.vision_pipeline = None
         # Inicializar Infraestructura Multi-Agente (SOTA 2026)
         self.agent_registry = AgentRegistry()
         self.mcp_client = MCPClient()
