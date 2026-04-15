@@ -1,5 +1,6 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+
+
 import { Scale, Heart, Activity } from 'lucide-react';
 import {
     AreaChart,

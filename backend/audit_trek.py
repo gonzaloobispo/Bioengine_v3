@@ -14,7 +14,7 @@ def audit():
     # Cycling
     cur.execute("SELECT SUM(distancia_km), COUNT(*) FROM activities WHERE lower(tipo) IN ('cycling', 'ciclismo', 'bicicleta', 'bike')")
     res = cur.fetchone()
-    print(f"--- CYCLING AUDIT ---")
+    print("--- CYCLING AUDIT ---")
     print(f"Total KM in DB: {res[0]}")
     print(f"Total Sessions in DB: {res[1]}")
     

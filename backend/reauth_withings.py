@@ -78,7 +78,7 @@ def main():
         f"&state=bioengine"
     )
     
-    print(f"\n[1] Abriendo navegador para autorizar...")
+    print("\n[1] Abriendo navegador para autorizar...")
     print(f"    URL: {auth_url[:80]}...")
     
     # Iniciar servidor local para capturar el callback
@@ -127,7 +127,7 @@ def main():
         print("  Reinicia el backend y prueba sincronizar.")
         print("=" * 50)
     else:
-        print(f"\n[ERROR] Fallo al obtener tokens:")
+        print("\n[ERROR] Fallo al obtener tokens:")
         print(json.dumps(data, indent=2))
 
 if __name__ == "__main__":

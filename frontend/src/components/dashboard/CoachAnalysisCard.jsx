@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { Brain, ChevronUp, ChevronDown, Clock } from 'lucide-react';
 
 const CoachAnalysisCard = ({ analysis, isLoading }) => {
@@ -8,7 +8,6 @@ const CoachAnalysisCard = ({ analysis, isLoading }) => {
 
     useEffect(() => {
         if (isLoading) {
-            setCountdown(45);
             const interval = setInterval(() => {
                 setCountdown(prev => {
                     if (prev <= 1) {
@@ -20,6 +19,10 @@ const CoachAnalysisCard = ({ analysis, isLoading }) => {
             }, 1000);
             return () => clearInterval(interval);
         }
+    }, [isLoading]);
+
+    useEffect(() => {
+        if (isLoading) { setTimeout(() => setCountdown(45), 0); }
     }, [isLoading]);
 
     return (

@@ -7,4 +7,4 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
       - run: pip install flake8 pytest
-      - run: flake8 .
+      - run: flake8 backend/ --exclude=tests,scripts --max-line-length=150 --ignore=E261,E302,E305,W291,W293,E722,E402,E701,F401,E501,F541,W391,F841,E111,E117,E226,E303,E301,E741

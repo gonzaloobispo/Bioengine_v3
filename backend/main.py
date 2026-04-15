@@ -242,7 +242,7 @@ async def get_system_status(_: bool = Depends(verify_admin_token)) -> dict:
         "version": "3.1.0-v4.2"
     }
 
-    return {"status": "ok", "enabled": enabled}
+    return {"status": "ok"}
 
 @app.get("/chat/status")
 def get_chat_status():

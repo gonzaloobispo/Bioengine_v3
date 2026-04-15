@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+
 import { ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 
 const CalendarView = ({ activities, normalizeActivityType }) => {

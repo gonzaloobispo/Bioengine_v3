@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, AlertTriangle, Check, X, Info } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
+import { ShieldAlert, CheckCircle, XCircle } from 'lucide-react';
 
 const HITLPanel = ({ showToast }) => {
     const [actions, setActions] = useState([]);
@@ -11,8 +11,8 @@ const HITLPanel = ({ showToast }) => {
             const response = await fetch('http://localhost:8000/hitl/pending');
             const data = await response.json();
             setActions(data);
-        } catch (error) {
-            console.error('Error fetching HITL actions:', error);
+        } catch (e) {
+            console.error('Error fetching HITL actions:', e);
         } finally {
             setLoading(false);
         }
@@ -36,8 +36,9 @@ const HITLPanel = ({ showToast }) => {
                 showToast(approved ? 'Acción aprobada con éxito' : 'Acción rechazada');
                 fetchActions();
             }
-        } catch (error) {
+        } catch (e) {
             showToast('Error al procesar la aprobación', 'error');
+            console.error(e);
         }
     };
 
@@ -46,113 +47,46 @@ const HITLPanel = ({ showToast }) => {
 
     return (
         <div className="hitl-panel" style={{ marginTop: '2rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                <ShieldCheck color="var(--accent-blue)" size={24} />
-                <h3 style={{ fontSize: '1.25rem', fontFamily: 'Outfit', margin: 0 }}>Supervisión Humana (HITL)</h3>
-                <span className="badge" style={{ background: 'var(--accent-blue)', color: '#000', fontSize: '0.7rem' }}>
-                    {actions.length} PENDIENTES
-                </span>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem' }}>
-                <AnimatePresence>
-                    {actions.map(action => (
-                        <motion.div
-                            key={action.action_id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="card"
-                            style={{
-                                border: '1px solid rgba(0, 210, 255, 0.2)',
-                                background: 'linear-gradient(145deg, rgba(13, 17, 33, 0.9), rgba(20, 25, 45, 0.9))',
-                                position: 'relative',
-                                overflow: 'hidden'
-                            }}
-                        >
-                            <div style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                width: '4px',
-                                height: '100%',
-                                background: action.severity === 'critical' ? 'var(--accent-red)' : 'var(--accent-blue)'
-                            }} />
-
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                                <div>
-                                    <span style={{
-                                        fontSize: '0.7rem',
-                                        fontWeight: 700,
-                                        color: 'var(--accent-blue)',
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '1px'
-                                    }}>
-                                        {action.action_type.replace(/_/g, ' ')}
-                                    </span>
-                                    <h4 style={{ margin: '0.25rem 0', fontSize: '1.1rem' }}>{action.description}</h4>
-                                </div>
-                                {action.severity === 'critical' && (
-                                    <AlertTriangle size={20} color="var(--accent-red)" className="animate-pulse" />
-                                )}
-                            </div>
-
-                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
-                                <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
-                                    <Info size={14} inline style={{ marginRight: '6px' }} />
-                                    {action.reasoning}
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ff4b2b', marginBottom: '1rem' }}>
+                <ShieldAlert size={20} /> Requiere Supervisión Humana (HITL)
+            </h3>
+            <div style={{ display: 'grid', gap: '1rem' }}>
+                {actions.map(action => (
+                    <div key={action.action_id} className="card" style={{ borderLeft: '4px solid #ff4b2b', padding: '1.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                                <h4 style={{ color: '#fff', fontSize: '1.2rem', marginBottom: '0.5rem' }}>
+                                    {action.details.operation}
+                                </h4>
+                                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                                    {action.details.rationale}
                                 </p>
-                                <div style={{ marginTop: '0.75rem' }}>
-                                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-red)' }}>RIESGOS:</span>
-                                    <ul style={{ margin: '0.25rem 0', paddingLeft: '1.25rem', fontSize: '0.85rem' }}>
-                                        {action.risks.map((risk, i) => <li key={i}>{risk}</li>)}
-                                    </ul>
+                                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem' }}>
+                                    <span style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px' }}>
+                                        Agente: {action.agent_source}
+                                    </span>
+                                    <span style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px' }}>
+                                        Riesgo: <span style={{ color: '#ff4b2b' }}>{action.risk_level}</span>
+                                    </span>
                                 </div>
                             </div>
-
-                            <div style={{ display: 'flex', gap: '1rem' }}>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
                                 <button
                                     onClick={() => handleAction(action.action_id, true)}
-                                    style={{
-                                        flex: 2,
-                                        padding: '10px',
-                                        borderRadius: '8px',
-                                        background: 'var(--accent-blue)',
-                                        color: '#000',
-                                        border: 'none',
-                                        fontWeight: 700,
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '0.5rem'
-                                    }}
+                                    style={{ background: 'rgba(0,255,170,0.1)', color: 'var(--accent-green)', border: '1px solid var(--accent-green)', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                                 >
-                                    <Check size={18} /> APROBAR CAMBIO
+                                    <CheckCircle size={16} /> Aprobar
                                 </button>
                                 <button
                                     onClick={() => handleAction(action.action_id, false)}
-                                    style={{
-                                        flex: 1,
-                                        padding: '10px',
-                                        borderRadius: '8px',
-                                        background: 'rgba(255,255,255,0.05)',
-                                        color: 'var(--text-muted)',
-                                        border: '1px solid var(--border)',
-                                        fontWeight: 600,
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '0.5rem'
-                                    }}
+                                    style={{ background: 'rgba(255,75,43,0.1)', color: '#ff4b2b', border: '1px solid #ff4b2b', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                                 >
-                                    <X size={18} /> RECHAZAR
+                                    <XCircle size={16} /> Rechazar
                                 </button>
                             </div>
-                        </motion.div>
-                    ))}
-                </AnimatePresence>
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
     );

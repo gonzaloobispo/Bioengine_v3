@@ -1,5 +1,6 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+
+
 import { Activity, Scale, Zap } from 'lucide-react';
 
 const KPIOverview = ({ lastWeight, totalKm, totalHours, activitiesCount, dateFilter, typeFilter, lastWeightDate }) => {

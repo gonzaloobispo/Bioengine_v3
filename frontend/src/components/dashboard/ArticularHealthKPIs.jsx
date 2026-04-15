@@ -1,8 +1,9 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+
+
 import { ShieldCheck, HeartPulse, Activity } from 'lucide-react';
 
-const ArticularHealthKPIs = ({ acwr, acwrRoad, acwrTrail, acwrStatus, acwrColor, lastWeight }) => {
+const ArticularHealthKPIs = ({ acwr, acwrRoad, acwrTrail, acwrStatus, acwrColor }) => {
     return (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
             {/* ACWR Card */}
