@@ -24,7 +24,7 @@ if not api_key:
 
 if not api_key:
     print("Error: No GEMINI_API_KEY found.")
-    exit(1)
+    pass
 
 client = genai.Client(api_key=api_key)
 

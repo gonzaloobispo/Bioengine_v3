@@ -20,7 +20,7 @@ if not api_key:
 
 if not api_key:
     print("Error: No OpenAI key found.")
-    exit(1)
+    pass
 
 client = OpenAI(api_key=api_key)
 
