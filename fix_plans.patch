@@ -1,0 +1,15 @@
+--- frontend/src/components/dashboard/PlansView.jsx
++++ frontend/src/components/dashboard/PlansView.jsx
+@@ -14,10 +14,8 @@
+             const res = await axios.get(`${API_BASE}/plans`);
+             setPlans(res.data);
+         } catch (e) {
+-            console.error("Error fetching plans:", error);
+-
+-
+-
++            console.error("Error fetching plans:", e);
++        }
+     };
+
+     const handleGenerateNewPlan = async () => {

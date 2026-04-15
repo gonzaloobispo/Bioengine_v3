@@ -1,4 +1,4 @@
-const EquiposView = ({ equipment, equipmentStats }) => {
+const EquiposView = ({ equipmentStats }) => {
     // Valores base históricos según Garmin Connect
     // Nota: El total de Garmin ya incluye las sesiones recientes sincronizadas.
     const TOTAL_TREK_GARMIN = 2510;

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import {
     Shield,
     Activity,
@@ -22,24 +22,24 @@ const SystemDashboard = ({ adminToken }) => {
 
     const API_BASE = 'http://localhost:8000';
 
-    const fetchStatus = useCallback(async () => {
+    const fetchStatus = async () => {
         try {
             const res = await axios.get(`${API_BASE}/system/status`, {
                 headers: { 'X-Admin-Token': adminToken || 'bioengine-local' }
             });
             setStatus(res.data);
-        } catch (e) { console.error(e);
-            console.error("Error fetching system status:", e);
+        } catch (error) {
+            console.error("Error fetching system status:", error);
         } finally {
             setLoading(false);
         }
-    }, [adminToken]);
+    };
 
     useEffect(() => {
         fetchStatus();
         const interval = setInterval(fetchStatus, 30000); // 30s refresh
         return () => clearInterval(interval);
-    }, [fetchStatus]);
+    }, []);
 
     const handleToggleCosts = async (enable) => {
         setToggling(true);
@@ -48,7 +48,7 @@ const SystemDashboard = ({ adminToken }) => {
                 headers: { 'X-Admin-Token': adminToken || 'bioengine-local' }
             });
             await fetchStatus();
-        } catch (e) { console.error(e);
+        } catch (error) {
             alert("Error al cambiar estado de costes");
         } finally {
             setToggling(false);

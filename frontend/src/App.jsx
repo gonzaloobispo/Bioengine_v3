@@ -89,7 +89,7 @@ function App() {
       const newGarmin = result.garmin.added || 0;
       const newWithings = result.withings.added || 0;
       showToast(`Sincronización: +${newGarmin} Garmin, +${newWithings} Withings`);
-    } catch (error) {
+    } catch (e) { console.error(e);
       showToast("Error crítico al sincronizar", "error");
     }
   };
@@ -100,7 +100,7 @@ function App() {
     setInputMessage('');
     try {
       await onSendMessage(msg);
-    } catch (error) {
+    } catch (e) { console.error(e);
       showToast("Error al enviar mensaje", "error");
     }
   };
@@ -109,7 +109,7 @@ function App() {
     setMemoryError(null);
     try {
       await onLoadMemory(memoryToken);
-    } catch (error) {
+    } catch (e) { console.error(e);
       setMemoryError('No se pudo cargar la memoria. Verifica el token.');
     }
   };

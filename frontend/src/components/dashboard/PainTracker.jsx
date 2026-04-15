@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+
 import { Activity, TrendingDown, TrendingUp, Minus } from 'lucide-react';
 import axios from 'axios';
 
