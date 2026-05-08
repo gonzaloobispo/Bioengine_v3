@@ -1,0 +1,11 @@
+[allowlist]
+description = "Allow known placeholders and public frontend keys"
+
+regexes = [
+  '''TU_ADMIN_TOKEN''',
+  '''TU_BIOENGINE_ADMIN_TOKEN''',
+  '''bioengine-local''',
+  '''AIzaSy''',
+  '''GROQ_API_KEY=''',
+  '''ELEVENLABS_API_KEY='''
+]

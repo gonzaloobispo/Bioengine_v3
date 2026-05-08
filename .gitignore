@@ -1,43 +1,152 @@
-# Dependencias
+# =========================
+# BioEngine V3 - Git Ignore
+# =========================
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+
+# Node / Frontend
 node_modules/
 dist/
 build/
-.env
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.pytest_cache/
-venv/
-.venv/
+.vite/
 
-# Logs y Temporales
-logs/
+# Logs / temp
 *.log
-%LOG_FILE%
-coach_analysis_*.json
-temp_*.mp4
-temp_*.mov
+logs/
+log_temp/
+tmp/
+temp/
+*.tmp
 
-# Scripts de mantenimiento y pruebas locales
-scripts/
-tmp_*.py
-test_*.py
-debug_*.txt
-
-# Bases de datos 
-# Ignoramos por defecto para evitar subir datos sensibles de salud
+# Databases
 *.db
-!bioengine_seed.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
 
-# IDEs
+# Secrets / credentials
+.env
+.env.*
+!.env.example
+!.env.template
+*.key
+*.pem
+*.p12
+*.pfx
+service-account.json
+credentials/
+secrets/
+login_records.enc
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# OS / IDE
+.DS_Store
+Thumbs.db
 .vscode/
 .idea/
-.DS_Store
 
-# Antigravity Specific
-.agent/tmp/
+# Backups / archives
+respaldos/
+archive/
+_legacy/
+*.zip
+*.bak
+*.old
 
-# Browser Profiles
-chrome_profile_notebooklm/
+# Quarantine
+._quarantine/
 
+# Excel temp
+~$*.xlsx
+~$*.xlsm
+
+# Windows shortcuts / binaries
+*.lnk
+*.exe
+*.dll
+
+# iOS / Xcode
+DerivedData/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+
+# =========================
+# Massive generated folders
+# =========================
+
+.agent/
+agent-skills/
+
+# Node
+**/node_modules/
+**/.vite/
+**/dist/
+**/build/
+
+# Firebase / Google
+.firebaserc
+firebase.json
+**/service-account.json
+**/token*.json
+**/credentials*.json
+**/gog_credentials/
+
+# Generated apps
+pilot-apps/
+
+# Telegram bot temp
+garmin_token_tmp.json
+token_export.json
+
+# AI tooling
+.opencode/
+.claude/
+.codex/
+
+# Generated caches
+.cache/
+
+# Local maintenance scripts
+scripts/resolve_skill_conflicts.ps1
+
+# Nested git repos
+**/.git/
+
+# Bot generated/local folders
+apps/bot-telegram/artifacts/
+apps/bot-telegram/tmp/
+apps/bot-telegram/scratch/
+apps/bot-telegram/dist/
+apps/bot-telegram/bin/
+apps/bot-telegram/gog_cli/
+apps/bot-telegram/.agent/
+apps/bot-telegram/.gemini/
+apps/bot-telegram/.context/
+apps/bot-telegram/*.txt
+apps/bot-telegram/models_*.json
+apps/bot-telegram/PLAN.json
+
+# Dashboard generated
+apps/dashboard-web/dist/
+
+# Sensitive local secret scripts
+apps/bot-telegram/scripts/seed_secrets.mjs
+apps/bot-telegram/scripts/refresh-garmin-token*.*
+apps/bot-telegram/scripts/save-garmin-credentials.ts
+apps/bot-telegram/scripts/extract_garmin_token.ts
+apps/bot-telegram/scripts/extract_creds*.ts
