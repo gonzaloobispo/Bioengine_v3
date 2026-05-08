@@ -84,3 +84,69 @@ DerivedData/
 *.xcuserstate
 *.xcworkspace/xcuserdata/
 *.xcodeproj/xcuserdata/
+
+# =========================
+# Massive generated folders
+# =========================
+
+.agent/
+agent-skills/
+
+# Node
+**/node_modules/
+**/.vite/
+**/dist/
+**/build/
+
+# Firebase / Google
+.firebaserc
+firebase.json
+**/service-account.json
+**/token*.json
+**/credentials*.json
+**/gog_credentials/
+
+# Generated apps
+pilot-apps/
+
+# Telegram bot temp
+garmin_token_tmp.json
+token_export.json
+
+# AI tooling
+.opencode/
+.claude/
+.codex/
+
+# Generated caches
+.cache/
+
+# Local maintenance scripts
+scripts/resolve_skill_conflicts.ps1
+
+# Nested git repos
+**/.git/
+
+# Bot generated/local folders
+apps/bot-telegram/artifacts/
+apps/bot-telegram/tmp/
+apps/bot-telegram/scratch/
+apps/bot-telegram/dist/
+apps/bot-telegram/bin/
+apps/bot-telegram/gog_cli/
+apps/bot-telegram/.agent/
+apps/bot-telegram/.gemini/
+apps/bot-telegram/.context/
+apps/bot-telegram/*.txt
+apps/bot-telegram/models_*.json
+apps/bot-telegram/PLAN.json
+
+# Dashboard generated
+apps/dashboard-web/dist/
+
+# Sensitive local secret scripts
+apps/bot-telegram/scripts/seed_secrets.mjs
+apps/bot-telegram/scripts/refresh-garmin-token*.*
+apps/bot-telegram/scripts/save-garmin-credentials.ts
+apps/bot-telegram/scripts/extract_garmin_token.ts
+apps/bot-telegram/scripts/extract_creds*.ts
